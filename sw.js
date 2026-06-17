@@ -6,7 +6,7 @@
 // Importante: cuando vuelvas a subir una versión nueva de index.html a Vercel,
 // sube también este archivo cambiando CACHE_NAME (p. ej. 'atlas-lecturas-v2'),
 // o el móvil seguirá viendo la versión antigua cacheada durante un tiempo.
-const CACHE_NAME = 'atlas-lecturas-v2';
+const CACHE_NAME = 'atlas-lecturas-v3';
 const APP_SHELL = [
   './',
   './index.html',

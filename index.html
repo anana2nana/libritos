@@ -1203,14 +1203,26 @@ function showGate(){
 
 getRedirectResult(auth).then(result=>{
   console.log('[ATLAS-DEBUG] getRedirectResult ->', result);
+  const el = document.getElementById('auth-error');
+  const attempted = sessionStorage.getItem('atlas_login_attempt');
+  if(attempted && el){
+    if(result && result.user){
+      el.textContent = 'Login completado (UID: '+result.user.uid+'). Si ves esto y sigues en la pantalla de login, recarga la página.';
+    }else{
+      el.textContent = 'Volviste de Google pero Firebase no devolvió ninguna sesión (resultado vacío). Esto suele ser un problema de configuración del proveedor Google en Firebase o de cookies de terceros bloqueadas.';
+    }
+  }
+  sessionStorage.removeItem('atlas_login_attempt');
 }).catch(err=>{
   console.error('[ATLAS-DEBUG] getRedirectResult ERROR ->', err.code, err.message);
   const el = document.getElementById('auth-error');
-  if(el) el.textContent = 'No se pudo iniciar sesión. Inténtalo de nuevo.';
+  if(el) el.textContent = 'Error: '+err.code+' — '+err.message;
+  sessionStorage.removeItem('atlas_login_attempt');
 });
 
 document.getElementById('google-login-btn').addEventListener('click', ()=>{
   console.log('[ATLAS-DEBUG] click login, lanzando signInWithRedirect');
+  sessionStorage.setItem('atlas_login_attempt','1');
   signInWithRedirect(auth, googleProvider);
 });
 

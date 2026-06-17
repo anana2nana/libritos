@@ -291,7 +291,12 @@ const googleProvider = new GoogleAuthProvider();
 const db = initializeFirestore(fbApp, { localCache: persistentLocalCache() });
 
 if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+  // Desactivado temporalmente mientras depuramos el login: en vez de registrar
+  // el Service Worker, desinstala cualquier versión anterior que ya estuviera
+  // activa, para eliminar la caché como variable mientras probamos.
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    regs.forEach(reg=>reg.unregister());
+  });
 }
 
 (function(){
@@ -628,5 +633,4 @@ const seedBooks = [
 {id:'b319',title:'América',author:'Franz Kafka',country:'Chequia',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'Inacabada, como El proceso y El castillo: un joven inmigrante perdido en un país que no entiende.'},
 {id:'b320',title:'Las tiendas de color canela',author:'Bruno Schulz',country:'Polonia',continent:'Europa',era:'Moderna',category:'Cuento',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Una infancia transfigurada en mito personal; imaginería muy densa.'},
 {id:'b321',title:'Ferdydurke',author:'Witold Gombrowicz',country:'Polonia',continent:'Europa',era:'Moderna',category:'Novela',priority:4,difficulty:4,pages:300,status:'pendiente',note:'Sátira absurdista sobre la inmadurez impuesta; tan rara como influyente.'},
-{id:'b322',title:'Siddhartha',author:'Hermann Hesse',country:'Alemania',continent:'Europa',era:'Moderna',category:'Novela',priority:1,difficulty:2,pages:150,status:'pendiente',note:'Búsqueda espiritual en clave de la India; brevísima y muy citada.'},
-{id:'b323',title:'El lobo estepario',author:'Hermann Hesse',country:'Alemania',continent:'Europa',era:'Moderna',category:'Novel
+{id:'b322',title:'Siddhartha',author:'Hermann Hesse',country:'Alemania',continent:'Europa',era:'Moderna',category:'Novela',priority:1,difficulty:2

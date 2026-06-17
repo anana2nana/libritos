@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atlas de lecturas</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B2A3D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Atlas">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root{
+  --ink:#1B2A3D;
+  --ink-deep:#121C2C;
+  --parchment:#F4EFE1;
+  --parchment-line:#E3D9C2;
+  --ink-text:#26324A;
+  --muted:#7A7363;
+  --muted-light:rgba(244,239,225,.62);
+  --terracotta:#C1592A;
+  --teal:#2F6F6F;
+  --gold:#E0AC52;
+  --plum:#9C4F6E;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--ink);
+  color:var(--parchment);
+  font-family:'Inter',sans-serif;
+  font-size:15px;
+  line-height:1.45;
+}
+#app{max-width:1180px;margin:0 auto;padding:28px 22px 60px;}
+
+/* ---------- header ---------- */
+.app-header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+.app-header h1{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:2.1rem;
+  letter-spacing:-0.01em;
+  margin:0;
+  color:var(--parchment);
+}
+.app-subtitle{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.74rem;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--gold);
+}
+
+/* ---------- stat cards ---------- */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:22px 0 18px;}
+.stat-card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;
+  padding:13px 14px;
+}
+.stat-value{font-family:'IBM Plex Mono',monospace;font-size:1.55rem;color:var(--gold);line-height:1;}
+.stat-label{font-size:.66rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-light);margin-top:5px;}
+
+/* ---------- chart panel ---------- */
+.panel-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.7rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--muted-light);
+  margin:26px 2px 8px;
+}
+.chart-panel{
+  background:var(--ink-deep);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;
+  padding:14px 10px 6px;
+  position:relative;
+}
+.chart-panel svg{width:100%;height:auto;display:block;}
+.chart-tooltip{
+  position:absolute;
+  display:none;
+  background:var(--parchment);
+  color:var(--ink-text);
+  padding:7px 11px;
+  border-radius:7px;
+  font-size:.74rem;
+  line-height:1.4;
+  pointer-events:none;
+  box-shadow:0 6px 18px rgba(0,0,0,.35);
+  transform:translate(-50%,-100%);
+  white-space:nowrap;
+  z-index:30;
+}
+.chart-tooltip b{font-family:'Fraunces',serif;font-weight:600;}
+.chart-legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;padding:8px 4px 4px;font-size:.72rem;color:var(--muted-light);}
+.chart-legend span{display:inline-flex;align-items:center;gap:6px;}
+.legend-dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+/* ---------- mini charts ---------- */
+.mini-charts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px;}
+.mini-card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;
+  padding:13px 14px;
+}
+.mini-title{font-family:'IBM Plex Mono',monospace;font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-light);margin-bottom:9px;}
+.bar-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.72rem;}
+.bar-label{flex:0 0 64px;color:var(--muted-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-track{flex:1;height:7px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;}
+.bar-count{flex:0 0 22px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--parchment);}
+
+/* ---------- controls (parchment zone) ---------- */
+.controls{
+  background:var(--parchment);
+  border-radius:14px;
+  padding:16px 16px 14px;
+  margin-top:26px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+  align-items:center;
+}
+.controls input[type=text],
+.controls select{
+  border:1px solid var(--parchment-line);
+  background:#fff;
+  border-radius:7px;
+  padding:7px 10px;
+  font-family:'Inter',sans-serif;
+  font-size:.82rem;
+  color:var(--ink-text);
+}
+.controls input[type=text]{flex:1 1 180px;min-width:140px;}
+#search-input::placeholder{color:#A39C89;}
+.controls .grow-gap{flex:1 1 100%;height:0;}
+.view-toggle{display:flex;border:1px solid var(--parchment-line);border-radius:7px;overflow:hidden;}
+.view-toggle button{
+  border:none;background:#fff;color:var(--ink-text);
+  font-family:'Inter',sans-serif;font-size:.8rem;padding:7px 13px;cursor:pointer;
+}
+.view-toggle button.active{background:var(--terracotta);color:#fff;}
+.btn-add{
+  background:var(--terracotta);color:#fff;border:none;border-radius:7px;
+  padding:8px 14px;font-size:.82rem;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;
+}
+.btn-add:hover{filter:brightness(1.08);}
+.controls-footer{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:2px;}
+.result-count{font-size:.74rem;color:var(--muted);}
+.btn-reset{background:none;border:none;color:var(--muted);font-size:.72rem;text-decoration:underline;cursor:pointer;padding:0;}
+
+/* ---------- table ---------- */
+.table-scroll{overflow-x:auto;margin-top:14px;border-radius:12px;}
+table{width:100%;border-collapse:collapse;background:var(--parchment);min-width:920px;}
+th{
+  text-align:left;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);padding:10px 9px;border-bottom:1px solid var(--parchment-line);
+  font-family:'IBM Plex Mono',monospace;font-weight:500;white-space:nowrap;
+}
+td{padding:8px 9px;border-bottom:1px solid var(--parchment-line);vertical-align:top;font-size:.82rem;color:var(--ink-text);}
+tr:hover td{background:rgba(193,89,42,.05);}
+.field-text{outline:none;border-radius:4px;padding:2px 4px;}
+.field-text:focus{background:#fff;box-shadow:0 0 0 2px rgba(193,89,42,.35);}
+td.title-cell .field-text{font-weight:600;}
+td.note-cell .field-text{max-width:190px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+td.note-cell .field-text:focus{max-width:320px;white-space:normal;overflow:visible;position:relative;z-index:6;}
+.field-select,.field-number{
+  border:1px solid var(--parchment-line);border-radius:5px;background:#fff;color:var(--ink-text);
+  font-family:'Inter',sans-serif;font-size:.78rem;padding:4px 5px;width:100%;
+}
+.field-number{width:62px;}
+.status-select.s-pendiente{background:#EFEAE0;color:#7A7363;}
+.status-select.s-leyendo{background:#FBEAC9;color:#8a6112;}
+.status-select.s-leído{background:#E2EFEC;color:#1f5c5c;}
+.btn-delete{
+  border:none;background:none;color:#B9573A;font-size:1rem;cursor:pointer;padding:0 4px;line-height:1;
+}
+.btn-delete:hover{color:#7a2d18;}
+
+/* ---------- cards ---------- */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:13px;margin-top:14px;}
+.book-card{
+  background:var(--parchment);border:1px solid var(--parchment-line);border-radius:12px;padding:14px 15px;
+}
+.book-card .card-title{font-family:'Fraunces',serif;font-weight:600;font-size:1.02rem;color:var(--ink-text);outline:none;border-radius:4px;}
+.book-card .card-title:focus{background:#fff;box-shadow:0 0 0 2px rgba(193,89,42,.3);}
+.book-card .card-author{font-size:.78rem;color:var(--muted);margin:2px 0 10px;outline:none;border-radius:4px;}
+.book-card .card-author:focus{background:#fff;}
+.card-meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;}
+.card-meta-row select,.card-meta-row input{font-size:.72rem;padding:3px 5px;border:1px solid var(--parchment-line);border-radius:5px;background:#fff;color:var(--ink-text);}
+.card-note{font-size:.78rem;color:var(--ink-text);margin-top:8px;outline:none;border-radius:4px;min-height:18px;}
+.card-note:focus{background:#fff;box-shadow:0 0 0 2px rgba(193,89,42,.3);}
+.card-footer{display:flex;justify-content:flex-end;margin-top:8px;}
+
+.empty-state{text-align:center;padding:40px 10px;color:var(--muted);font-size:.86rem;}
+
+/* ---------- footer ---------- */
+.footer-note{margin-top:18px;text-align:center;font-size:.7rem;color:rgba(244,239,225,.4);}
+
+@media (max-width:760px){
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .mini-charts{grid-template-columns:1fr 1fr;}
+  .controls{flex-direction:column;align-items:stretch;}
+  .controls select,.controls input[type=text]{flex:1 1 auto;width:100%;}
+}
+
+/* ---------- auth gate ---------- */
+#auth-gate{
+  display:none;
+  min-height:100vh;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:24px;
+  gap:18px;
+}
+#auth-gate h1{font-family:'Fraunces',serif;font-weight:600;font-size:1.8rem;margin:0;color:var(--parchment);}
+#auth-gate p{color:var(--muted-light);font-size:.88rem;max-width:320px;margin:0;}
+.btn-google{
+  display:flex;align-items:center;gap:10px;
+  background:var(--parchment);color:var(--ink-text);
+  border:none;border-radius:10px;padding:13px 22px;
+  font-family:'Inter',sans-serif;font-weight:600;font-size:.92rem;
+  cursor:pointer;
+}
+.btn-google:hover{background:#fff;}
+.auth-error{color:var(--terracotta);font-size:.78rem;max-width:320px;}
+
+/* ---------- sync status ---------- */
+.sync-row{display:flex;align-items:center;gap:14px;}
+.sync-status{
+  font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.04em;
+  display:flex;align-items:center;gap:6px;color:var(--muted-light);
+}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--gold);}
+.sync-status[data-state="guardando"] .sync-dot{background:var(--gold);animation:pulse 1s infinite;}
+.sync-status[data-state="guardado"] .sync-dot{background:var(--teal);animation:none;}
+.sync-status[data-state="error"] .sync-dot{background:var(--terracotta);animation:none;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.btn-signout{
+  background:none;border:none;color:var(--muted-light);
+  font-family:'IBM Plex Mono',monospace;font-size:.68rem;text-decoration:underline;
+  cursor:pointer;padding:0;
+}
+</style>
+</head>
+<body>
+<div id="auth-gate">
+  <h1>Atlas de lecturas</h1>
+  <p>Tu catálogo personal, sincronizado en la nube. Inicia sesión con tu cuenta de Google para acceder a tus libros desde cualquier dispositivo.</p>
+  <button class="btn-google" id="google-login-btn">
+    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92A8.78 8.78 0 0 0 17.64 9.2z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.41 5.41 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A8.997 8.997 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.88 8.88 0 0 0 9 0 8.997 8.997 0 0 0 .96 4.95L3.97 7.28C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+    Iniciar sesión con Google
+  </button>
+  <div class="auth-error" id="auth-error"></div>
+</div>
+<div id="app" style="display:none">
+  <div id="loading" class="empty-state">Cargando tu atlas de lecturas…</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+/* ===================== firebase ===================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyD4NVjd0UOw5FZEKMvmam7IUhjXDuzd3Vg",
+  authDomain: "libritos-fb4e4.firebaseapp.com",
+  projectId: "libritos-fb4e4",
+  storageBucket: "libritos-fb4e4.firebasestorage.app",
+  messagingSenderId: "361508801886",
+  appId: "1:361508801886:web:e9cffa0f8bbba85d7093cf",
+  measurementId: "G-TVFK4MXXGZ"
+};
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const googleProvider = new GoogleAuthProvider();
+const db = initializeFirestore(fbApp, { localCache: persistentLocalCache() });
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+
+(function(){
+
+/* ===================== datos ===================== */
+
+const CONTINENTS = ['Europa','América','Asia','África','Oceanía'];
+const CATEGORIES = ['Novela','Ensayo','Poesía','Cuento','Estrategia','Ciencia','Gráfica','Memoria','Teatro','Filosofía'];
+const ERAS = ['Antigua','Clásica','Moderna','Contemporánea'];
+const STATUSES = ['pendiente','leyendo','leído'];
+
+const CONTINENT_COLOR = {Europa:'#2F6F6F',América:'#C1592A',Asia:'#E0AC52',África:'#9C4F6E',Oceanía:'#7A8B69'};
+const STATUS_COLOR = {pendiente:'#8C8576',leyendo:'#E0AC52',leído:'#2F6F6F'};
+
+const seedBooks = [
+{id:'b1',title:'La Ilíada',author:'Homero',country:'Grecia',continent:'Europa',era:'Antigua',category:'Poesía',priority:1,difficulty:4,pages:600,status:'pendiente',note:'Epopeya fundacional de la cultura occidental: la guerra como destino.'},
+{id:'b2',title:'La Odisea',author:'Homero',country:'Grecia',continent:'Europa',era:'Antigua',category:'Poesía',priority:1,difficulty:3,pages:500,status:'pendiente',note:'El viaje como estructura narrativa matriz.'},
+{id:'b3',title:'Meditaciones',author:'Marco Aurelio',country:'Roma',continent:'Europa',era:'Antigua',category:'Ensayo',priority:1,difficulty:2,pages:200,status:'pendiente',note:'Estoicismo aplicado; perfecto para leer en fragmentos sueltos.'},
+{id:'b4',title:'Historia de la guerra del Peloponeso',author:'Tucídides',country:'Grecia',continent:'Europa',era:'Antigua',category:'Ensayo',priority:2,difficulty:4,pages:650,status:'pendiente',note:'El origen del análisis geopolítico realista.'},
+{id:'b5',title:'El castillo',author:'Franz Kafka',country:'Chequia',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:3,pages:320,status:'pendiente',note:'La burocracia como laberinto metafísico — te va a sonar muy familiar.'},
+{id:'b6',title:'Los sonámbulos',author:'Hermann Broch',country:'Austria',continent:'Europa',era:'Moderna',category:'Novela',priority:4,difficulty:5,pages:650,status:'pendiente',note:'Trilogía sobre la disolución de valores en la Europa de entreguerras.'},
+{id:'b7',title:'La montaña mágica',author:'Thomas Mann',country:'Alemania',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:4,pages:720,status:'pendiente',note:'Un sanatorio como microcosmos de Europa antes de la Gran Guerra.'},
+{id:'b8',title:'El tambor de hojalata',author:'Günter Grass',country:'Alemania',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:4,pages:580,status:'pendiente',note:'Realismo mágico aplicado al trauma alemán del siglo XX.'},
+{id:'b9',title:'Crimen y castigo',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:3,pages:550,status:'pendiente',note:'Culpa y redención: psicología antes de que existiera la psicología.'},
+{id:'b10',title:'Guerra y paz',author:'Liev Tolstói',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:4,pages:1350,status:'pendiente',note:'Historia, estrategia y vida íntima entrelazadas a gran escala.'},
+{id:'b11',title:'El maestro y Margarita',author:'Mijaíl Bulgákov',country:'Rusia',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:3,pages:450,status:'pendiente',note:'Sátira del poder soviético, con el diablo como invitado de honor.'},
+{id:'b12',title:'Vida y destino',author:'Vasili Grossman',country:'Rusia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:4,pages:900,status:'pendiente',note:'Stalingrado como sistema, no como batalla.'},
+{id:'b13',title:'Don Quijote de la Mancha',author:'Miguel de Cervantes',country:'España',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:3,pages:1000,status:'pendiente',note:'El libro fundacional de la novela moderna.'},
+{id:'b14',title:'La Regenta',author:'Leopoldo Alas Clarín',country:'España',continent:'Europa',era:'Clásica',category:'Novela',priority:3,difficulty:3,pages:700,status:'pendiente',note:'Provincia, hipocresía y deseo en la España del XIX.'},
+{id:'b15',title:'Niebla',author:'Miguel de Unamuno',country:'España',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'Metaficción existencialista, corta y filosa.'},
+{id:'b16',title:'Tiempo de silencio',author:'Luis Martín-Santos',country:'España',continent:'Europa',era:'Contemporánea',category:'Novela',priority:4,difficulty:4,pages:250,status:'pendiente',note:'La España gris del franquismo en prosa experimental.'},
+{id:'b17',title:'Cien años de soledad',author:'Gabriel García Márquez',country:'Colombia',continent:'América',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:470,status:'pendiente',note:'La entrada estándar al realismo mágico latinoamericano.'},
+{id:'b18',title:'Rayuela',author:'Julio Cortázar',country:'Argentina',continent:'América',era:'Contemporánea',category:'Novela',priority:2,difficulty:4,pages:600,status:'pendiente',note:'Se puede leer en dos órdenes distintos: hecho para no terminarse de forma lineal.'},
+{id:'b19',title:'Pedro Páramo',author:'Juan Rulfo',country:'México',continent:'América',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:130,status:'pendiente',note:'Brevísimo y fantasmal: la novela mexicana por excelencia.'},
+{id:'b20',title:'La ciudad y los perros',author:'Mario Vargas Llosa',country:'Perú',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:420,status:'pendiente',note:'Jerarquía y violencia dentro de una academia militar.'},
+{id:'b21',title:'Ficciones',author:'Jorge Luis Borges',country:'Argentina',continent:'América',era:'Moderna',category:'Cuento',priority:1,difficulty:3,pages:200,status:'pendiente',note:'Relatos cortos, ideales para intercalar entre lecturas largas.'},
+{id:'b22',title:'Middlemarch',author:'George Eliot',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:3,pages:900,status:'pendiente',note:'Retrato coral de una sociedad provincial inglesa.'},
+{id:'b23',title:'Moby Dick',author:'Herman Melville',country:'Estados Unidos',continent:'América',era:'Clásica',category:'Novela',priority:2,difficulty:4,pages:650,status:'pendiente',note:'Obsesión, naturaleza y alegoría: más ensayo que aventura.'},
+{id:'b24',title:'Ulises',author:'James Joyce',country:'Irlanda',continent:'Europa',era:'Moderna',category:'Novela',priority:4,difficulty:5,pages:900,status:'pendiente',note:'La cumbre técnica de la narrativa anglosajona; casi un reto de tesis.'},
+{id:'b25',title:'1984',author:'George Orwell',country:'Reino Unido',continent:'Europa',era:'Moderna',category:'Novela',priority:1,difficulty:2,pages:320,status:'pendiente',note:'Vigilancia y control: lectura casi obligatoria para tu perfil analítico.'},
+{id:'b26',title:'La señora Dalloway',author:'Virginia Woolf',country:'Reino Unido',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Un solo día narrado en flujo de conciencia: breve pero densa.'},
+{id:'b27',title:'Las mil y una noches',author:'Anónimo',country:'Mundo árabe',continent:'Asia',era:'Antigua',category:'Cuento',priority:2,difficulty:2,pages:600,status:'pendiente',note:'Relatos encajados dentro de relatos: perfecto para leer por fragmentos.'},
+{id:'b28',title:'Hijos de Gebelawi',author:'Naguib Mahfuz',country:'Egipto',continent:'África',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:550,status:'pendiente',note:'Alegoría religiosa sobre el Cairo moderno, del Nobel egipcio.'},
+{id:'b29',title:'Persépolis',author:'Marjane Satrapi',country:'Irán',continent:'Asia',era:'Contemporánea',category:'Gráfica',priority:2,difficulty:1,pages:350,status:'pendiente',note:'Novela gráfica sobre la revolución iraní vista desde la infancia.'},
+{id:'b30',title:'Leyendo Lolita en Teherán',author:'Azar Nafisi',country:'Irán',continent:'Asia',era:'Contemporánea',category:'Ensayo',priority:3,difficulty:2,pages:400,status:'pendiente',note:'La literatura como resistencia bajo un régimen represivo.'},
+{id:'b31',title:'Sueño en el pabellón rojo',author:'Cao Xueqin',country:'China',continent:'Asia',era:'Clásica',category:'Novela',priority:3,difficulty:4,pages:2500,status:'pendiente',note:'La gran novela clásica china; extensísima.'},
+{id:'b32',title:'Vida y muerte me están desgastando',author:'Mo Yan',country:'China',continent:'Asia',era:'Contemporánea',category:'Novela',priority:4,difficulty:3,pages:540,status:'pendiente',note:'Reencarnación y sátira de la China rural maoísta.'},
+{id:'b33',title:'Kokoro',author:'Natsume Soseki',country:'Japón',continent:'Asia',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'Choque entre tradición y modernidad en el Japón Meiji.'},
+{id:'b34',title:'Crónica del pájaro que da cuerda al mundo',author:'Haruki Murakami',country:'Japón',continent:'Asia',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:700,status:'pendiente',note:'Realismo extraño y muy adictivo.'},
+{id:'b35',title:'El sonido de la montaña',author:'Yasunari Kawabata',country:'Japón',continent:'Asia',era:'Moderna',category:'Novela',priority:3,difficulty:2,pages:280,status:'pendiente',note:'Vejez y familia con prosa minimalista, del Nobel japonés.'},
+{id:'b36',title:'El dios de las pequeñas cosas',author:'Arundhati Roy',country:'India',continent:'Asia',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:380,status:'pendiente',note:'Casta, familia y tiempo no lineal en Kerala.'},
+{id:'b37',title:'Pasaje a la India',author:'E. M. Forster',country:'Reino Unido',continent:'Asia',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'El choque colonial visto con ironía británica.'},
+{id:'b38',title:'Todo se desmorona',author:'Chinua Achebe',country:'Nigeria',continent:'África',era:'Moderna',category:'Novela',priority:1,difficulty:2,pages:250,status:'pendiente',note:'La entrada estándar a la literatura africana poscolonial.'},
+{id:'b39',title:'Desgracia',author:'J. M. Coetzee',country:'Sudáfrica',continent:'África',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'Sudáfrica postapartheid: corta y dura.'},
+{id:'b40',title:'Sueño en tiempo de guerra',author:"Ngugi wa Thiong'o",country:'Kenia',continent:'África',era:'Contemporánea',category:'Memoria',priority:4,difficulty:2,pages:450,status:'pendiente',note:'Memorias de infancia bajo el colonialismo británico.'},
+{id:'b41',title:'El arte de la guerra',author:'Sun Tzu',country:'China',continent:'Asia',era:'Antigua',category:'Estrategia',priority:1,difficulty:1,pages:120,status:'pendiente',note:'Brevísimo y aplicable directamente a negociación.'},
+{id:'b42',title:'De la guerra',author:'Carl von Clausewitz',country:'Prusia',continent:'Europa',era:'Clásica',category:'Estrategia',priority:2,difficulty:4,pages:600,status:'pendiente',note:'La teoría estratégica occidental de referencia; denso.'},
+{id:'b43',title:'Armas, gérmenes y acero',author:'Jared Diamond',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Ensayo',priority:1,difficulty:2,pages:550,status:'pendiente',note:'Por qué unas civilizaciones dominaron a otras: macro-historia.'},
+{id:'b44',title:'Los orígenes del totalitarismo',author:'Hannah Arendt',country:'Alemania',continent:'Europa',era:'Moderna',category:'Ensayo',priority:2,difficulty:4,pages:700,status:'pendiente',note:'Análisis denso pero clave para entender el poder del siglo XX.'},
+{id:'b45',title:'Sapiens',author:'Yuval Noah Harari',country:'Israel',continent:'Asia',era:'Contemporánea',category:'Ensayo',priority:1,difficulty:1,pages:450,status:'pendiente',note:'Panorámica accesible; buena puerta de entrada a la macro-historia.'},
+{id:'b46',title:'Cosmos',author:'Carl Sagan',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Ciencia',priority:1,difficulty:1,pages:380,status:'pendiente',note:'Divulgación científica con alma; conecta con tu setup de astrofotografía.'},
+{id:'b47',title:'Una breve historia del tiempo',author:'Stephen Hawking',country:'Reino Unido',continent:'Europa',era:'Contemporánea',category:'Ciencia',priority:2,difficulty:3,pages:250,status:'pendiente',note:'Física para no físicos: corta pero densa en ideas.'},
+{id:'b48',title:'Trampa 22',author:'Joseph Heller',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:450,status:'pendiente',note:'La sátira definitiva de la lógica burocrático-militar.'},
+{id:'b49',title:'Klara y el sol',author:'Kazuo Ishiguro',country:'Reino Unido',continent:'Europa',era:'Contemporánea',category:'Novela',priority:1,difficulty:1,pages:300,status:'pendiente',note:'IA, lenguaje y vínculo narrados desde dentro de una máquina.'},
+{id:'b50',title:'El libro de la almohada',author:'Sei Shonagon',country:'Japón',continent:'Asia',era:'Antigua',category:'Ensayo',priority:3,difficulty:1,pages:300,status:'pendiente',note:'Fragmentos sueltos sin arco narrativo: se puede picotear sin culpa.'},
+{id:'b51',title:'Edipo Rey',author:'Sófocles',country:'Grecia',continent:'Europa',era:'Antigua',category:'Teatro',priority:1,difficulty:3,pages:100,status:'pendiente',note:'La tragedia griega que define el destino y la culpa trágica.'},
+{id:'b52',title:'La Orestíada',author:'Esquilo',country:'Grecia',continent:'Europa',era:'Antigua',category:'Teatro',priority:2,difficulty:3,pages:150,status:'pendiente',note:'Trilogía sobre la justicia, la venganza y el nacimiento del tribunal.'},
+{id:'b53',title:'Lisístrata',author:'Aristófanes',country:'Grecia',continent:'Europa',era:'Antigua',category:'Teatro',priority:3,difficulty:2,pages:90,status:'pendiente',note:'Comedia política: las mujeres usan el sexo como arma contra la guerra.'},
+{id:'b54',title:'La República',author:'Platón',country:'Grecia',continent:'Europa',era:'Antigua',category:'Filosofía',priority:1,difficulty:4,pages:400,status:'pendiente',note:'El diálogo fundacional sobre la justicia y la ciudad ideal.'},
+{id:'b55',title:'Ética a Nicómaco',author:'Aristóteles',country:'Grecia',continent:'Europa',era:'Antigua',category:'Filosofía',priority:2,difficulty:4,pages:350,status:'pendiente',note:'Qué es vivir bien, explicado con la virtud como término medio.'},
+{id:'b56',title:'Historias',author:'Heródoto',country:'Grecia',continent:'Europa',era:'Antigua',category:'Ensayo',priority:2,difficulty:3,pages:700,status:'pendiente',note:'El "padre de la historia" narrando el mundo conocido de su época.'},
+{id:'b57',title:'Vidas paralelas',author:'Plutarco',country:'Grecia',continent:'Europa',era:'Antigua',category:'Ensayo',priority:3,difficulty:3,pages:900,status:'pendiente',note:'Biografías cruzadas de griegos y romanos pensadas para comparar carácter.'},
+{id:'b58',title:'La Eneida',author:'Virgilio',country:'Roma',continent:'Europa',era:'Antigua',category:'Poesía',priority:2,difficulty:3,pages:400,status:'pendiente',note:'La epopeya fundacional de Roma, eco directo de Homero.'},
+{id:'b59',title:'Metamorfosis',author:'Ovidio',country:'Roma',continent:'Europa',era:'Antigua',category:'Poesía',priority:2,difficulty:3,pages:500,status:'pendiente',note:'Mitos griegos y romanos engarzados por la idea de transformación.'},
+{id:'b60',title:'Cartas a Lucilio',author:'Séneca',country:'Roma',continent:'Europa',era:'Antigua',category:'Filosofía',priority:2,difficulty:2,pages:350,status:'pendiente',note:'Estoicismo en formato epistolar, muy practicable en el día a día.'},
+{id:'b61',title:'De la naturaleza de las cosas',author:'Lucrecio',country:'Roma',continent:'Europa',era:'Antigua',category:'Poesía',priority:4,difficulty:4,pages:300,status:'pendiente',note:'Poema filosófico sobre el atomismo epicúreo: ciencia antes de la ciencia.'},
+{id:'b62',title:'Confesiones',author:'San Agustín',country:'Roma/Norte de África',continent:'Europa',era:'Antigua',category:'Memoria',priority:2,difficulty:3,pages:400,status:'pendiente',note:'La autobiografía espiritual que inaugura el género en Occidente.'},
+{id:'b63',title:'La Divina Comedia',author:'Dante Alighieri',country:'Italia',continent:'Europa',era:'Clásica',category:'Poesía',priority:1,difficulty:4,pages:700,status:'pendiente',note:'El viaje por el más allá que organiza toda la imaginación occidental posterior.'},
+{id:'b64',title:'El Decamerón',author:'Giovanni Boccaccio',country:'Italia',continent:'Europa',era:'Clásica',category:'Cuento',priority:2,difficulty:2,pages:900,status:'pendiente',note:'Cien relatos contados por jóvenes que huyen de la peste; perfecto por fragmentos.'},
+{id:'b65',title:'Cuentos de Canterbury',author:'Geoffrey Chaucer',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Poesía',priority:2,difficulty:3,pages:500,status:'pendiente',note:'Un mosaico de voces medievales inglesas en verso.'},
+{id:'b66',title:'El príncipe',author:'Nicolás Maquiavelo',country:'Italia',continent:'Europa',era:'Clásica',category:'Estrategia',priority:1,difficulty:2,pages:150,status:'pendiente',note:'El manual de poder político más citado de la historia.'},
+{id:'b67',title:'Utopía',author:'Tomás Moro',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Ensayo',priority:3,difficulty:2,pages:150,status:'pendiente',note:'La isla imaginaria que dio nombre a todo un género político.'},
+{id:'b68',title:'Elogio de la locura',author:'Erasmo de Róterdam',country:'Países Bajos',continent:'Europa',era:'Clásica',category:'Ensayo',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Sátira erudita sobre la necedad humana, narrada por ella misma.'},
+{id:'b69',title:'Gargantúa y Pantagruel',author:'François Rabelais',country:'Francia',continent:'Europa',era:'Clásica',category:'Novela',priority:4,difficulty:4,pages:900,status:'pendiente',note:'Desmesura, comida y risa como crítica del dogma renacentista.'},
+{id:'b70',title:'Ensayos',author:'Michel de Montaigne',country:'Francia',continent:'Europa',era:'Clásica',category:'Ensayo',priority:2,difficulty:2,pages:1000,status:'pendiente',note:'El padre del ensayo personal: escribir para pensar, no para concluir.'},
+{id:'b71',title:'Lazarillo de Tormes',author:'Anónimo',country:'España',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:2,pages:120,status:'pendiente',note:'La novela picaresca fundacional: hambre, ingenio y servidumbre.'},
+{id:'b72',title:'La vida es sueño',author:'Calderón de la Barca',country:'España',continent:'Europa',era:'Clásica',category:'Teatro',priority:2,difficulty:3,pages:150,status:'pendiente',note:'El teatro filosófico español por excelencia: ¿qué es realidad y qué es sueño?'},
+{id:'b73',title:'El Buscón',author:'Francisco de Quevedo',country:'España',continent:'Europa',era:'Clásica',category:'Novela',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Picaresca ácida, escrita con un ingenio verbal feroz.'},
+{id:'b74',title:'Fuenteovejuna',author:'Lope de Vega',country:'España',continent:'Europa',era:'Clásica',category:'Teatro',priority:3,difficulty:2,pages:120,status:'pendiente',note:'Justicia colectiva contra el abuso señorial, en verso.'},
+{id:'b75',title:'Rojo y negro',author:'Stendhal',country:'Francia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:3,pages:500,status:'pendiente',note:'Ambición social y doblez en la Francia post-napoleónica.'},
+{id:'b76',title:'Papá Goriot',author:'Honoré de Balzac',country:'Francia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:3,pages:350,status:'pendiente',note:'Dinero, paternidad y ambición en el París de la Comedia Humana.'},
+{id:'b77',title:'Madame Bovary',author:'Gustave Flaubert',country:'Francia',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:3,pages:400,status:'pendiente',note:'El retrato definitivo del tedio y el deseo en la provincia burguesa.'},
+{id:'b78',title:'Germinal',author:'Émile Zola',country:'Francia',continent:'Europa',era:'Clásica',category:'Novela',priority:3,difficulty:3,pages:500,status:'pendiente',note:'Una huelga minera narrada con la precisión casi científica del naturalismo.'},
+{id:'b79',title:'En busca del tiempo perdido',author:'Marcel Proust',country:'Francia',continent:'Europa',era:'Moderna',category:'Novela',priority:4,difficulty:5,pages:3200,status:'pendiente',note:'La memoria como arquitectura narrativa: un proyecto de años, no de meses.'},
+{id:'b80',title:'Los miserables',author:'Victor Hugo',country:'Francia',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:3,pages:1300,status:'pendiente',note:'Redención, justicia y revolución en un fresco social monumental.'},
+{id:'b81',title:'Cándido',author:'Voltaire',country:'Francia',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:1,pages:120,status:'pendiente',note:'Sátira filosófica breve y demoledora contra el optimismo ingenuo.'},
+{id:'b82',title:'El contrato social',author:'Jean-Jacques Rousseau',country:'Francia',continent:'Europa',era:'Clásica',category:'Filosofía',priority:2,difficulty:3,pages:250,status:'pendiente',note:'De dónde viene la legitimidad del poder, en términos que siguen citándose.'},
+{id:'b83',title:'El extranjero',author:'Albert Camus',country:'Francia/Argelia',continent:'Europa',era:'Moderna',category:'Novela',priority:1,difficulty:2,pages:150,status:'pendiente',note:'El absurdo existencial en su forma más despojada.'},
+{id:'b84',title:'La náusea',author:'Jean-Paul Sartre',country:'Francia',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:4,pages:250,status:'pendiente',note:'El existencialismo convertido en diario íntimo de un malestar metafísico.'},
+{id:'b85',title:'El segundo sexo',author:'Simone de Beauvoir',country:'Francia',continent:'Europa',era:'Moderna',category:'Ensayo',priority:2,difficulty:3,pages:800,status:'pendiente',note:'El ensayo fundacional del feminismo filosófico contemporáneo.'},
+{id:'b86',title:'Memorias de Adriano',author:'Marguerite Yourcenar',country:'Francia/Bélgica',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Un emperador romano reconstruido con precisión casi histórica.'},
+{id:'b87',title:'La vida instrucciones de uso',author:'Georges Perec',country:'Francia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:4,difficulty:4,pages:600,status:'pendiente',note:'Un edificio entero, habitación por habitación, como un puzle narrativo.'},
+{id:'b88',title:'Fausto',author:'Johann Wolfgang von Goethe',country:'Alemania',continent:'Europa',era:'Clásica',category:'Teatro',priority:1,difficulty:4,pages:500,status:'pendiente',note:'El pacto con el diablo convertido en summa de la cultura alemana.'},
+{id:'b89',title:'Así habló Zaratustra',author:'Friedrich Nietzsche',country:'Alemania',continent:'Europa',era:'Clásica',category:'Filosofía',priority:2,difficulty:4,pages:350,status:'pendiente',note:'Filosofía escrita como poema profético; denso pero hipnótico.'},
+{id:'b90',title:'El hombre sin atributos',author:'Robert Musil',country:'Austria',continent:'Europa',era:'Moderna',category:'Novela',priority:4,difficulty:5,pages:1700,status:'pendiente',note:'Retrato inacabado de una Europa que ya presentía su propio colapso.'},
+{id:'b91',title:'El perfume',author:'Patrick Süskind',country:'Alemania',continent:'Europa',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:300,status:'pendiente',note:'Thriller histórico-sensorial, muy fácil de devorar en pocos días.'},
+{id:'b92',title:'Los anillos de Saturno',author:'W. G. Sebald',country:'Alemania/Reino Unido',continent:'Europa',era:'Contemporánea',category:'Memoria',priority:4,difficulty:4,pages:300,status:'pendiente',note:'Un paseo a pie que deriva en meditación sobre la historia y la decadencia.'},
+{id:'b93',title:'Casa de muñecas',author:'Henrik Ibsen',country:'Noruega',continent:'Europa',era:'Clásica',category:'Teatro',priority:2,difficulty:2,pages:100,status:'pendiente',note:'El drama que puso en escena la asfixia del matrimonio burgués.'},
+{id:'b94',title:'Hambre',author:'Knut Hamsun',country:'Noruega',continent:'Europa',era:'Clásica',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'El monólogo de un escritor muriéndose de hambre en Oslo, escrito sin sentimentalismo.'},
+{id:'b95',title:'Memorias de África',author:'Karen Blixen',country:'Dinamarca',continent:'Europa',era:'Moderna',category:'Memoria',priority:3,difficulty:2,pages:350,status:'pendiente',note:'Una granja en Kenia narrada con una mirada a la vez íntima y colonial.'},
+{id:'b96',title:'Gente independiente',author:'Halldór Laxness',country:'Islandia',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:450,status:'pendiente',note:'Un pastor islandés y su obsesión por la independencia, a cualquier precio.'},
+{id:'b97',title:'Las ciudades invisibles',author:'Italo Calvino',country:'Italia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Ciudades imaginarias como excusa para pensar el espacio y el lenguaje.'},
+{id:'b98',title:'El nombre de la rosa',author:'Umberto Eco',country:'Italia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:1,difficulty:3,pages:550,status:'pendiente',note:'Misterio medieval en una abadía, con la semiótica como herramienta de detective.'},
+{id:'b99',title:'Si esto es un hombre',author:'Primo Levi',country:'Italia',continent:'Europa',era:'Moderna',category:'Memoria',priority:1,difficulty:2,pages:250,status:'pendiente',note:'Testimonio esencial sobre Auschwitz, sobrio y devastador.'},
+{id:'b100',title:'El Gatopardo',author:'Giuseppe Tomasi di Lampedusa',country:'Italia',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:3,pages:300,status:'pendiente',note:'La aristocracia siciliana viendo pasar el mundo que la sustituye.'},
+{id:'b101',title:'Los novios',author:'Alessandro Manzoni',country:'Italia',continent:'Europa',era:'Clásica',category:'Novela',priority:3,difficulty:3,pages:600,status:'pendiente',note:'La gran novela histórica italiana del XIX, fundacional para la lengua moderna.'},
+{id:'b102',title:'Libro del desasosiego',author:'Fernando Pessoa',country:'Portugal',continent:'Europa',era:'Moderna',category:'Ensayo',priority:2,difficulty:2,pages:450,status:'pendiente',note:'Fragmentos de una identidad fracturada en múltiples heterónimos; ideal para picotear.'},
+{id:'b103',title:'Ensayo sobre la ceguera',author:'José Saramago',country:'Portugal',continent:'Europa',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:350,status:'pendiente',note:'Una ciudad se queda ciega de golpe; alegoría sobre el colapso del orden social.'},
+{id:'b104',title:'Memorias póstumas de Blas Cubas',author:'Machado de Assis',country:'Brasil',continent:'América',era:'Clásica',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'Narrada por un muerto, con un humor adelantado un siglo a su época.'},
+{id:'b105',title:'La insoportable levedad del ser',author:'Milan Kundera',country:'Chequia/Francia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:300,status:'pendiente',note:'Amor, política y azar bajo la ocupación soviética de Praga.'},
+{id:'b106',title:'Sin destino',author:'Imre Kertész',country:'Hungría',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'Auschwitz visto a través de los ojos sin adornos de un adolescente.'},
+{id:'b107',title:'El último encuentro',author:'Sándor Márai',country:'Hungría',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:2,pages:200,status:'pendiente',note:'Dos viejos amigos, una traición y cuarenta años de silencio acumulado.'},
+{id:'b108',title:'Los errantes',author:'Olga Tokarczuk',country:'Polonia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:400,status:'pendiente',note:'Fragmentos sobre viajes y cuerpos, del Nobel polaco más reciente.'},
+{id:'b109',title:'Solaris',author:'Stanisław Lem',country:'Polonia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'Ciencia ficción filosófica sobre los límites de entender lo no humano.'},
+{id:'b110',title:'Zorba el griego',author:'Nikos Kazantzakis',country:'Grecia',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:350,status:'pendiente',note:'Vitalismo desbordante frente a la mesura del narrador que lo observa.'},
+{id:'b111',title:'Nieve',author:'Orhan Pamuk',country:'Turquía',continent:'Asia',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:450,status:'pendiente',note:'Política, fe e identidad en una ciudad turca aislada por la nieve.'},
+{id:'b112',title:'Una historia de amor y oscuridad',author:'Amos Oz',country:'Israel',continent:'Asia',era:'Contemporánea',category:'Memoria',priority:2,difficulty:3,pages:550,status:'pendiente',note:'Infancia en Jerusalén entrelazada con el nacimiento del propio país.'},
+{id:'b113',title:'Eugenio Oneguin',author:'Aleksandr Pushkin',country:'Rusia',continent:'Europa',era:'Clásica',category:'Poesía',priority:2,difficulty:3,pages:250,status:'pendiente',note:'Novela en verso que inventa al "hombre superfluo" ruso.'},
+{id:'b114',title:'Almas muertas',author:'Nikolái Gógol',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:3,pages:400,status:'pendiente',note:'Sátira corrosiva de la burocracia y la avaricia provincial rusa.'},
+{id:'b115',title:'Padres e hijos',author:'Iván Turguénev',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:2,pages:300,status:'pendiente',note:'El choque generacional que acuñó el término "nihilista".'},
+{id:'b116',title:'Cuentos completos',author:'Antón Chéjov',country:'Rusia',continent:'Europa',era:'Clásica',category:'Cuento',priority:1,difficulty:2,pages:700,status:'pendiente',note:'Maestro del relato breve y de todo lo que se queda sin decir.'},
+{id:'b117',title:'Archipiélago Gulag',author:'Aleksandr Solzhenitsyn',country:'Rusia/URSS',continent:'Europa',era:'Contemporánea',category:'Memoria',priority:3,difficulty:4,pages:700,status:'pendiente',note:'El sistema de campos soviético documentado desde dentro, sin concesiones.'},
+{id:'b118',title:'Un día en la vida de Iván Denísovich',author:'Aleksandr Solzhenitsyn',country:'Rusia/URSS',continent:'Europa',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Un solo día de gulag, suficiente para mostrarlo todo.'},
+{id:'b119',title:'Voces de Chernóbil',author:'Svetlana Alexiévich',country:'Bielorrusia',continent:'Europa',era:'Contemporánea',category:'Ensayo',priority:2,difficulty:2,pages:350,status:'pendiente',note:'Testimonios corales sobre el desastre nuclear; periodismo literario del Nobel.'},
+{id:'b120',title:'Lolita',author:'Vladimir Nabokov',country:'Rusia/Estados Unidos',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:4,pages:350,status:'pendiente',note:'Prosa virtuosa al servicio de un narrador profundamente perturbador.'},
+{id:'b121',title:'Orgullo y prejuicio',author:'Jane Austen',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:2,pages:400,status:'pendiente',note:'Ironía social fina sobre matrimonio, clase y primeras impresiones equivocadas.'},
+{id:'b122',title:'Cumbres borrascosas',author:'Emily Brontë',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:3,pages:350,status:'pendiente',note:'Una obsesión amorosa que se vuelve casi geológica, fundida con el páramo.'},
+{id:'b123',title:'Jane Eyre',author:'Charlotte Brontë',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:2,pages:500,status:'pendiente',note:'Una institutriz que se niega a aceptar un lugar inferior, punto por punto.'},
+{id:'b124',title:'Grandes esperanzas',author:'Charles Dickens',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:2,pages:550,status:'pendiente',note:'Ascenso social, vergüenza de clase y un benefactor secreto.'},
+{id:'b125',title:'Tess, la de los Urberville',author:'Thomas Hardy',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:3,pages:450,status:'pendiente',note:'El peso del destino y la doble moral victoriana cayendo sobre una mujer.'},
+{id:'b126',title:'Frankenstein',author:'Mary Shelley',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:2,pages:250,status:'pendiente',note:'El mito moderno de la criatura y su creador, nacido de una apuesta literaria.'},
+{id:'b127',title:'Drácula',author:'Bram Stoker',country:'Irlanda',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:2,pages:450,status:'pendiente',note:'El vampiro que fijó el género para todo lo que vino después.'},
+{id:'b128',title:'El retrato de Dorian Gray',author:'Oscar Wilde',country:'Irlanda',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:2,pages:250,status:'pendiente',note:'Belleza, vanidad y un retrato que envejece en lugar de su dueño.'},
+{id:'b129',title:'El corazón de las tinieblas',author:'Joseph Conrad',country:'Polonia/Reino Unido',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:3,pages:150,status:'pendiente',note:'Un viaje al Congo colonial que se convierte en descenso moral.'},
+{id:'b130',title:'Hojas de hierba',author:'Walt Whitman',country:'Estados Unidos',continent:'América',era:'Clásica',category:'Poesía',priority:2,difficulty:2,pages:400,status:'pendiente',note:'Verso libre y celebración expansiva de la democracia y el cuerpo.'},
+{id:'b131',title:'El gran Gatsby',author:'F. Scott Fitzgerald',country:'Estados Unidos',continent:'América',era:'Moderna',category:'Novela',priority:1,difficulty:2,pages:200,status:'pendiente',note:'El sueño americano descomponiéndose en una fiesta tras otra.'},
+{id:'b132',title:'El viejo y el mar',author:'Ernest Hemingway',country:'Estados Unidos',continent:'América',era:'Moderna',category:'Novela',priority:1,difficulty:1,pages:120,status:'pendiente',note:'Frase corta, emoción contenida: la "teoría del iceberg" en estado puro.'},
+{id:'b133',title:'Fiesta',author:'Ernest Hemingway',country:'Estados Unidos',continent:'América',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'La generación perdida, deambulando entre París y los toros de Pamplona.'},
+{id:'b134',title:'El sonido y la furia',author:'William Faulkner',country:'Estados Unidos',continent:'América',era:'Moderna',category:'Novela',priority:4,difficulty:5,pages:350,status:'pendiente',note:'Cuatro voces, cuatro tiempos, una familia sureña desmoronándose.'},
+{id:'b135',title:'Las uvas de la ira',author:'John Steinbeck',country:'Estados Unidos',continent:'América',era:'Moderna',category:'Novela',priority:1,difficulty:2,pages:500,status:'pendiente',note:'Una familia migrante huyendo del polvo hacia California, en plena Depresión.'},
+{id:'b136',title:'Beloved',author:'Toni Morrison',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:350,status:'pendiente',note:'La esclavitud como herida que vuelve, narrada como un fantasma literal.'},
+{id:'b137',title:'Matar a un ruiseñor',author:'Harper Lee',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:1,difficulty:1,pages:350,status:'pendiente',note:'Racismo y justicia vistos a través de los ojos de una niña del Sur.'},
+{id:'b138',title:'Meridiano de sangre',author:'Cormac McCarthy',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:4,difficulty:4,pages:350,status:'pendiente',note:'Violencia fronteriza narrada con una prosa bíblica e implacable.'},
+{id:'b139',title:'La carretera',author:'Cormac McCarthy',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'Un padre y un hijo cruzando un mundo postapocalíptico, casi sin nombres.'},
+{id:'b140',title:'Pastoral americana',author:'Philip Roth',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:450,status:'pendiente',note:'El sueño americano de una familia judía estallando con el Vietnam de fondo.'},
+{id:'b141',title:'Matadero cinco',author:'Kurt Vonnegut',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:200,status:'pendiente',note:'Ciencia ficción y trauma de guerra mezclados con humor negro.'},
+{id:'b142',title:'La broma infinita',author:'David Foster Wallace',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:5,difficulty:5,pages:1100,status:'pendiente',note:'Adicción, entretenimiento y tenis en una novela tan extensa como sus propias notas a pie de página.'},
+{id:'b143',title:'Las correcciones',author:'Jonathan Franzen',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:600,status:'pendiente',note:'Una familia disfuncional convergiendo para una última Navidad juntos.'},
+{id:'b144',title:'El cuento de la criada',author:'Margaret Atwood',country:'Canadá',continent:'América',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:350,status:'pendiente',note:'Distopía sobre el control reproductivo, narrada desde dentro del sometimiento.'},
+{id:'b145',title:'Cuentos completos',author:'Alice Munro',country:'Canadá',continent:'América',era:'Contemporánea',category:'Cuento',priority:2,difficulty:2,pages:400,status:'pendiente',note:'Vidas ordinarias canadienses con giros que solo se ven al final.'},
+{id:'b146',title:'Poemas',author:'Emily Dickinson',country:'Estados Unidos',continent:'América',era:'Clásica',category:'Poesía',priority:2,difficulty:3,pages:300,status:'pendiente',note:'Poesía breve y elíptica, escrita casi en secreto durante toda una vida.'},
+{id:'b147',title:'Cuentos completos',author:'Edgar Allan Poe',country:'Estados Unidos',continent:'América',era:'Clásica',category:'Cuento',priority:1,difficulty:2,pages:450,status:'pendiente',note:'El origen del relato de terror y del policiaco moderno, en el mismo autor.'},
+{id:'b148',title:'La casa de los espíritus',author:'Isabel Allende',country:'Chile',continent:'América',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:450,status:'pendiente',note:'Tres generaciones de mujeres y la historia chilena del siglo XX entrelazadas.'},
+{id:'b149',title:'Antología poética',author:'Pablo Neruda',country:'Chile',continent:'América',era:'Moderna',category:'Poesía',priority:1,difficulty:2,pages:300,status:'pendiente',note:'Poesía amorosa y política a partes iguales, del Nobel chileno.'},
+{id:'b150',title:'El laberinto de la soledad',author:'Octavio Paz',country:'México',continent:'América',era:'Moderna',category:'Ensayo',priority:2,difficulty:3,pages:200,status:'pendiente',note:'Un ensayo sobre la identidad mexicana, breve pero fundacional.'},
+{id:'b151',title:'La muerte de Artemio Cruz',author:'Carlos Fuentes',country:'México',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Los últimos recuerdos de un hombre de poder, fragmentados como su conciencia.'},
+{id:'b152',title:'Como agua para chocolate',author:'Laura Esquivel',country:'México',continent:'América',era:'Contemporánea',category:'Novela',priority:1,difficulty:1,pages:250,status:'pendiente',note:'Recetas de cocina y pasión reprimida, en clave de realismo mágico ligero.'},
+{id:'b153',title:'2666',author:'Roberto Bolaño',country:'Chile',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:4,pages:1100,status:'pendiente',note:'Crímenes, escritores fantasma y una ciudad fronteriza como centro de gravedad.'},
+{id:'b154',title:'Los detectives salvajes',author:'Roberto Bolaño',country:'Chile',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:600,status:'pendiente',note:'Una búsqueda literaria que se convierte en road trip por medio continente.'},
+{id:'b155',title:'La hora de la estrella',author:'Clarice Lispector',country:'Brasil',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:100,status:'pendiente',note:'Brevísima y filosa: la vida de una mujer pobre narrada sin condescendencia.'},
+{id:'b156',title:'Doña Flor y sus dos maridos',author:'Jorge Amado',country:'Brasil',continent:'América',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:550,status:'pendiente',note:'Una viuda, un fantasma y el Brasil sensual de Bahía.'},
+{id:'b157',title:'Gran Sertón: Veredas',author:'João Guimarães Rosa',country:'Brasil',continent:'América',era:'Contemporánea',category:'Novela',priority:4,difficulty:5,pages:650,status:'pendiente',note:'Una lengua inventada para narrar el sertón brasileño; experimental y extensa.'},
+{id:'b158',title:'El reino de este mundo',author:'Alejo Carpentier',country:'Cuba',continent:'América',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:150,status:'pendiente',note:'La revolución haitiana narrada desde "lo real maravilloso" caribeño.'},
+{id:'b159',title:'El túnel',author:'Ernesto Sabato',country:'Argentina',continent:'América',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Los celos y el aislamiento de un pintor narrados desde dentro de su obsesión.'},
+{id:'b160',title:'El beso de la mujer araña',author:'Manuel Puig',country:'Argentina',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:2,pages:250,status:'pendiente',note:'Una celda compartida, dos presos y el cine como vía de escape.'},
+{id:'b161',title:'Doña Bárbara',author:'Rómulo Gallegos',country:'Venezuela',continent:'América',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Civilización contra barbarie en los llanos venezolanos.'},
+{id:'b162',title:'El señor presidente',author:'Miguel Ángel Asturias',country:'Guatemala',continent:'América',era:'Moderna',category:'Novela',priority:3,difficulty:4,pages:300,status:'pendiente',note:'Retrato de un dictador y del terror cotidiano que administra.'},
+{id:'b163',title:'Me llamo Rigoberta Menchú',author:'Rigoberta Menchú',country:'Guatemala',continent:'América',era:'Contemporánea',category:'Memoria',priority:2,difficulty:2,pages:300,status:'pendiente',note:'Testimonio indígena sobre la represión en la Guatemala de los 80.'},
+{id:'b164',title:'Una casa para el Sr. Biswas',author:'V. S. Naipaul',country:'Trinidad y Tobago',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:550,status:'pendiente',note:'La obsesión de un hombre por tener una casa propia, en la diáspora india del Caribe.'},
+{id:'b165',title:'El profeta',author:'Khalil Gibran',country:'Líbano',continent:'Asia',era:'Moderna',category:'Poesía',priority:2,difficulty:1,pages:120,status:'pendiente',note:'Prosa poética breve sobre el amor, el trabajo y la muerte.'},
+{id:'b166',title:'Poesía completa',author:'Mahmud Darwish',country:'Palestina',continent:'Asia',era:'Contemporánea',category:'Poesía',priority:2,difficulty:2,pages:250,status:'pendiente',note:'La poesía como forma de memoria y resistencia nacional.'},
+{id:'b167',title:'El masnaví',author:'Rumi',country:'Persia',continent:'Asia',era:'Clásica',category:'Poesía',priority:2,difficulty:3,pages:500,status:'pendiente',note:'Poesía mística sufí, todavía hoy la más leída de su tradición.'},
+{id:'b168',title:'Rubaiyat',author:'Omar Jayyam',country:'Persia',continent:'Asia',era:'Clásica',category:'Poesía',priority:2,difficulty:1,pages:100,status:'pendiente',note:'Cuartetas breves sobre el vino, el tiempo y la duda existencial.'},
+{id:'b169',title:'Shahnameh (El libro de los reyes)',author:'Ferdowsi',country:'Persia',continent:'Asia',era:'Clásica',category:'Poesía',priority:3,difficulty:4,pages:900,status:'pendiente',note:'La gran epopeya persa: mito y historia de reyes durante milenios.'},
+{id:'b170',title:'El edificio Yacobián',author:'Alaa Al Aswany',country:'Egipto',continent:'África',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:350,status:'pendiente',note:'Un edificio de El Cairo como microcosmos de toda la sociedad egipcia.'},
+{id:'b171',title:'Mujer en punto cero',author:'Nawal El Saadawi',country:'Egipto',continent:'África',era:'Contemporánea',category:'Novela',priority:3,difficulty:2,pages:150,status:'pendiente',note:'El testimonio de una mujer condenada a muerte, breve y directo.'},
+{id:'b172',title:'Temporada de migración al norte',author:'Tayeb Salih',country:'Sudán',continent:'África',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:150,status:'pendiente',note:'El choque colonial invertido: un sudanés seduciendo Europa desde dentro.'},
+{id:'b173',title:'Tao Te Ching',author:'Laozi',country:'China',continent:'Asia',era:'Antigua',category:'Filosofía',priority:1,difficulty:1,pages:100,status:'pendiente',note:'81 fragmentos breves; se lee entero en una tarde y se relee toda la vida.'},
+{id:'b174',title:'Analectas',author:'Confucio',country:'China',continent:'Asia',era:'Antigua',category:'Filosofía',priority:1,difficulty:2,pages:200,status:'pendiente',note:'Máximas breves sobre el orden social y la conducta correcta.'},
+{id:'b175',title:'Bhagavad-gītā',author:'Anónimo (tradición védica)',country:'India',continent:'Asia',era:'Antigua',category:'Poesía',priority:1,difficulty:2,pages:150,status:'pendiente',note:'Diálogo filosófico-poético central en la tradición hindú, sobre el deber y la acción.'},
+{id:'b176',title:'Diario de un loco y otros cuentos',author:'Lu Xun',country:'China',continent:'Asia',era:'Moderna',category:'Cuento',priority:2,difficulty:2,pages:200,status:'pendiente',note:'El fundador de la narrativa china moderna, crítico y compasivo a la vez.'},
+{id:'b177',title:'Lust, Caution y otros relatos',author:'Eileen Chang',country:'China',continent:'Asia',era:'Moderna',category:'Cuento',priority:3,difficulty:2,pages:250,status:'pendiente',note:'Deseo y traición en la Shanghái ocupada, con prosa muy visual.'},
+{id:'b178',title:'¡Vivir!',author:'Yu Hua',country:'China',continent:'Asia',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:250,status:'pendiente',note:'Una familia china atravesada por sesenta años de historia convulsa.'},
+{id:'b179',title:'El problema de los tres cuerpos',author:'Liu Cixin',country:'China',continent:'Asia',era:'Contemporánea',category:'Novela',priority:1,difficulty:3,pages:450,status:'pendiente',note:'Ciencia ficción dura con una premisa de primer contacto inquietante.'},
+{id:'b180',title:'La buena tierra',author:'Pearl S. Buck',country:'China',continent:'Asia',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:350,status:'pendiente',note:'Retrato del campesinado chino, escrito por una autora criada allí.'},
+{id:'b181',title:'Confesiones de una máscara',author:'Yukio Mishima',country:'Japón',continent:'Asia',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Identidad y deseo ocultos detrás de una máscara social impecable.'},
+{id:'b182',title:'El elogio de la sombra',author:'Junichiro Tanizaki',country:'Japón',continent:'Asia',era:'Moderna',category:'Ensayo',priority:2,difficulty:1,pages:100,status:'pendiente',note:'Una defensa breve de la estética de la penumbra frente a la luz occidental.'},
+{id:'b183',title:'Una cuestión personal',author:'Kenzaburo Oe',country:'Japón',continent:'Asia',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'Un padre frente al nacimiento de un hijo con discapacidad; durísima y honesta.'},
+{id:'b184',title:'Kitchen',author:'Banana Yoshimoto',country:'Japón',continent:'Asia',era:'Contemporánea',category:'Novela',priority:1,difficulty:1,pages:150,status:'pendiente',note:'Duelo y cocina como refugio, en una novela breve y muy leída.'},
+{id:'b185',title:'La chica de la convenience store',author:'Sayaka Murata',country:'Japón',continent:'Asia',era:'Contemporánea',category:'Novela',priority:1,difficulty:1,pages:150,status:'pendiente',note:'Normalidad y rareza social vistas desde detrás de una caja registradora.'},
+{id:'b186',title:'Silencio',author:'Shusaku Endo',country:'Japón',continent:'Asia',era:'Moderna',category:'Novela',priority:3,difficulty:2,pages:250,status:'pendiente',note:'Fe y persecución en el Japón del siglo XVII, narrada con enorme contención.'},
+{id:'b187',title:'La vegetariana',author:'Han Kang',country:'Corea del Sur',continent:'Asia',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:200,status:'pendiente',note:'Una negativa silenciosa a comer carne que desestabiliza a toda una familia.'},
+{id:'b188',title:'Hijos de la medianoche',author:'Salman Rushdie',country:'India/Reino Unido',continent:'Asia',era:'Contemporánea',category:'Novela',priority:2,difficulty:4,pages:550,status:'pendiente',note:'Mil niños nacidos con la independencia de la India, narrados con realismo mágico.'},
+{id:'b189',title:'El guía y otros relatos',author:'R. K. Narayan',country:'India',continent:'Asia',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'Un pueblo indio imaginario que funciona como espejo de toda la India.'},
+{id:'b190',title:'Una pareja feliz',author:'Vikram Seth',country:'India',continent:'Asia',era:'Contemporánea',category:'Novela',priority:4,difficulty:3,pages:1400,status:'pendiente',note:'Una madre buscando marido para su hija en la India de los 50; extensísima y costumbrista.'},
+{id:'b191',title:'El buen nombre',author:'Jhumpa Lahiri',country:'India/Estados Unidos',continent:'Asia',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:300,status:'pendiente',note:'Identidad y nombre propio entre dos culturas, narrado con delicadeza.'},
+{id:'b192',title:'El fundamentalista reticente',author:'Mohsin Hamid',country:'Pakistán',continent:'Asia',era:'Contemporánea',category:'Novela',priority:2,difficulty:1,pages:200,status:'pendiente',note:'Un monólogo tenso entre un pakistaní y un desconocido tras el 11-S.'},
+{id:'b193',title:'Cometas en el cielo',author:'Khaled Hosseini',country:'Afganistán',continent:'Asia',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:400,status:'pendiente',note:'Amistad y culpa entre dos niños afganos, hasta la llegada de los talibanes.'},
+{id:'b194',title:'Gitanjali (Ofrenda lírica)',author:'Rabindranath Tagore',country:'India',continent:'Asia',era:'Moderna',category:'Poesía',priority:2,difficulty:1,pages:150,status:'pendiente',note:'Poesía devocional breve, del primer Nobel de Literatura no europeo.'},
+{id:'b195',title:'El dolor de la guerra',author:'Bao Ninh',country:'Vietnam',continent:'Asia',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'La guerra de Vietnam contada por el bando que rara vez se traduce.'},
+{id:'b196',title:'El paciente inglés',author:'Michael Ondaatje',country:'Sri Lanka/Canadá',continent:'Asia',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:300,status:'pendiente',note:'Identidad y memoria fragmentadas en una villa italiana al final de la guerra.'},
+{id:'b197',title:'Poesía completa',author:'Forough Farrokhzad',country:'Irán',continent:'Asia',era:'Moderna',category:'Poesía',priority:3,difficulty:2,pages:150,status:'pendiente',note:'Voz pionera y rupturista de la poesía iraní moderna.'},
+{id:'b198',title:'El fusil de caza',author:'Yasushi Inoue',country:'Japón',continent:'Asia',era:'Moderna',category:'Novela',priority:2,difficulty:1,pages:100,status:'pendiente',note:'Una historia de amor contada a través de tres cartas; brevísima y precisa.'},
+{id:'b199',title:'Vergüenza',author:'Taslima Nasrin',country:'Bangladés',continent:'Asia',era:'Contemporánea',category:'Novela',priority:3,difficulty:2,pages:200,status:'pendiente',note:'Una familia hindú atrapada en la violencia comunitaria de los 90.'},
+{id:'b200',title:'Noli me tangere',author:'José Rizal',country:'Filipinas',continent:'Asia',era:'Clásica',category:'Novela',priority:2,difficulty:3,pages:450,status:'pendiente',note:'La novela que detonó el nacionalismo filipino contra el dominio colonial.'},
+{id:'b201',title:'Ake: los años de infancia',author:'Wole Soyinka',country:'Nigeria',continent:'África',era:'Contemporánea',category:'Memoria',priority:3,difficulty:2,pages:350,status:'pendiente',note:'Memorias de infancia del primer africano en ganar el Nobel de Literatura.'},
+{id:'b202',title:'La palmera bebedora de vino',author:'Amos Tutuola',country:'Nigeria',continent:'África',era:'Moderna',category:'Novela',priority:3,difficulty:2,pages:150,status:'pendiente',note:'Mitología yoruba reescrita como un viaje fantástico y alucinado.'},
+{id:'b203',title:'Los soles de las independencias',author:'Ahmadou Kourouma',country:'Costa de Marfil',continent:'África',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:200,status:'pendiente',note:'La desilusión postcolonial narrada con un francés deliberadamente "mal hablado".'},
+{id:'b204',title:'Carta larga',author:'Mariama Bâ',country:'Senegal',continent:'África',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Una carta epistolar sobre poligamia y emancipación femenina en Senegal.'},
+{id:'b205',title:'Las alegrías de la maternidad',author:'Buchi Emecheta',country:'Nigeria',continent:'África',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'Maternidad y tradición chocando con la vida urbana colonial.'},
+{id:'b206',title:'Volver a casa',author:'Yaa Gyasi',country:'Ghana/Estados Unidos',continent:'África',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:350,status:'pendiente',note:'Saga familiar que cruza de la costa de Ghana a la esclavitud en EE. UU.'},
+{id:'b207',title:'Necesitamos nombres nuevos',author:'NoViolet Bulawayo',country:'Zimbabue',continent:'África',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:300,status:'pendiente',note:'La infancia en Zimbabue y la migración a EE. UU., vistas por una niña.'},
+{id:'b208',title:'Condiciones nerviosas',author:'Tsitsi Dangarembga',country:'Zimbabue',continent:'África',era:'Contemporánea',category:'Novela',priority:3,difficulty:2,pages:250,status:'pendiente',note:'Educación y género en la Rodesia colonial, contado desde una joven ambiciosa.'},
+{id:'b209',title:'Una pregunta de poder',author:'Bessie Head',country:'Botsuana/Sudáfrica',continent:'África',era:'Contemporánea',category:'Novela',priority:4,difficulty:3,pages:250,status:'pendiente',note:'Locura, exilio y raza narrados desde un colapso psicológico muy personal.'},
+{id:'b210',title:'La hija de Burger',author:'Nadine Gordimer',country:'Sudáfrica',continent:'África',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Heredar una causa política familiar bajo el apartheid.'},
+{id:'b211',title:'Una temporada blanca y seca',author:'André Brink',country:'Sudáfrica',continent:'África',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:300,status:'pendiente',note:'Un hombre blanco que empieza a ver lo que el apartheid le ocultaba.'},
+{id:'b212',title:'Llanto por la tierra amada',author:'Alan Paton',country:'Sudáfrica',continent:'África',era:'Moderna',category:'Novela',priority:1,difficulty:2,pages:350,status:'pendiente',note:'Una de las primeras grandes denuncias literarias del sistema racial sudafricano.'},
+{id:'b213',title:'El niño negro',author:'Camara Laye',country:'Guinea',continent:'África',era:'Moderna',category:'Memoria',priority:2,difficulty:1,pages:200,status:'pendiente',note:'Infancia y tradición en la Guinea colonial, narradas con calidez poco frecuente en el género.'},
+{id:'b214',title:'Mujeres de Argel en su apartamento',author:'Assia Djebar',country:'Argelia',continent:'África',era:'Contemporánea',category:'Cuento',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Voces femeninas argelinas, encerradas tanto física como simbólicamente.'},
+{id:'b215',title:'El último amigo',author:'Tahar Ben Jelloun',country:'Marruecos',continent:'África',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:200,status:'pendiente',note:'Una amistad masculina de décadas, contada desde dos versiones distintas.'},
+{id:'b216',title:'El país de los demás',author:'Leïla Slimani',country:'Marruecos/Francia',continent:'África',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:350,status:'pendiente',note:'Una francesa instalada en el Marruecos rural de los años 40.'},
+{id:'b217',title:'Medio sol amarillo',author:'Chimamanda Ngozi Adichie',country:'Nigeria',continent:'África',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:450,status:'pendiente',note:'La guerra de Biafra contada desde varias voces entrelazadas.'},
+{id:'b218',title:'Americanah',author:'Chimamanda Ngozi Adichie',country:'Nigeria/Estados Unidos',continent:'África',era:'Contemporánea',category:'Novela',priority:1,difficulty:1,pages:450,status:'pendiente',note:'Raza, migración y amor entre Lagos y Estados Unidos, con mucho humor.'},
+{id:'b219',title:'Los de madera de Dios',author:'Ousmane Sembène',country:'Senegal',continent:'África',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:300,status:'pendiente',note:'Una huelga ferroviaria colonial narrada con conciencia de clase explícita.'},
+{id:'b220',title:'Voss',author:'Patrick White',country:'Australia',continent:'Oceanía',era:'Moderna',category:'Novela',priority:3,difficulty:4,pages:450,status:'pendiente',note:'Del único australiano en ganar el Nobel: expedición y delirio en el desierto interior.'},
+{id:'b221',title:'Calle de las nubes',author:'Tim Winton',country:'Australia',continent:'Oceanía',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:450,status:'pendiente',note:'Dos familias compartiendo una misma casa en Perth durante veinte años.'},
+{id:'b222',title:'Mi lugar',author:'Sally Morgan',country:'Australia',continent:'Oceanía',era:'Contemporánea',category:'Memoria',priority:2,difficulty:1,pages:350,status:'pendiente',note:'Memoria sobre la identidad aborigen oculta durante generaciones.'},
+{id:'b223',title:'Carpentaria',author:'Alexis Wright',country:'Australia',continent:'Oceanía',era:'Contemporánea',category:'Novela',priority:4,difficulty:4,pages:500,status:'pendiente',note:'Mito aborigen y realismo conviviendo en un pueblo minero del norte australiano.'},
+{id:'b224',title:'El jinete de la ballena',author:'Witi Ihimaera',country:'Nueva Zelanda',continent:'Oceanía',era:'Contemporánea',category:'Novela',priority:1,difficulty:1,pages:150,status:'pendiente',note:'La identidad maorí narrada a través de la leyenda y una niña protagonista.'},
+{id:'b225',title:'El hueso tallado',author:'Keri Hulme',country:'Nueva Zelanda',continent:'Oceanía',era:'Contemporánea',category:'Novela',priority:3,difficulty:4,pages:450,status:'pendiente',note:'Tres personajes maoríes y pakeha unidos por un niño y mucha violencia contenida.'},
+{id:'b226',title:'Mister Pip',author:'Lloyd Jones',country:'Nueva Zelanda',continent:'Oceanía',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'Dickens leído en voz alta en mitad de una guerra civil en Bougainville.'},
+{id:'b227',title:'El origen de las especies',author:'Charles Darwin',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Ciencia',priority:1,difficulty:3,pages:450,status:'pendiente',note:'La idea que reorganizó toda la biología posterior.'},
+{id:'b228',title:'Pensar rápido, pensar despacio',author:'Daniel Kahneman',country:'Israel/Estados Unidos',continent:'Asia',era:'Contemporánea',category:'Ensayo',priority:1,difficulty:2,pages:500,status:'pendiente',note:'Dos sistemas de pensamiento, y por qué confiamos demasiado en el rápido.'},
+{id:'b229',title:'El cisne negro',author:'Nassim Nicholas Taleb',country:'Líbano/Estados Unidos',continent:'Asia',era:'Contemporánea',category:'Ensayo',priority:1,difficulty:3,pages:450,status:'pendiente',note:'Sobre lo improbable, lo que no se puede predecir y por qué igualmente decide la historia.'},
+{id:'b230',title:'Antifrágil',author:'Nassim Nicholas Taleb',country:'Líbano/Estados Unidos',continent:'Asia',era:'Contemporánea',category:'Ensayo',priority:2,difficulty:3,pages:550,status:'pendiente',note:'Sistemas que no solo resisten el desorden, sino que mejoran con él.'},
+{id:'b231',title:'Astrofísica para gente con prisa',author:'Neil deGrasse Tyson',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Ciencia',priority:1,difficulty:1,pages:250,status:'pendiente',note:'El universo explicado en capítulos cortos, ideal para leer en piezas sueltas.'},
+{id:'b232',title:'Siete breves lecciones de física',author:'Carlo Rovelli',country:'Italia',continent:'Europa',era:'Contemporánea',category:'Ciencia',priority:1,difficulty:1,pages:100,status:'pendiente',note:'Relatividad y mecánica cuántica condensadas en un puñado de páginas hermosas.'},
+{id:'b233',title:'El hombre que confundió a su mujer con un sombrero',author:'Oliver Sacks',country:'Reino Unido',continent:'Europa',era:'Contemporánea',category:'Ciencia',priority:1,difficulty:1,pages:250,status:'pendiente',note:'Casos clínicos neurológicos contados con una empatía casi literaria.'},
+{id:'b234',title:'¿Está usted de broma, Sr. Feynman?',author:'Richard Feynman',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Memoria',priority:1,difficulty:1,pages:450,status:'pendiente',note:'Anécdotas de un Nobel de física que se tomaba la curiosidad como un juego.'},
+{id:'b235',title:'El emperador de todos los males',author:'Siddhartha Mukherjee',country:'India/Estados Unidos',continent:'Asia',era:'Contemporánea',category:'Ciencia',priority:2,difficulty:2,pages:600,status:'pendiente',note:'Biografía del cáncer: ciencia, historia y pacientes entrelazados.'},
+{id:'b236',title:'Diplomacia',author:'Henry Kissinger',country:'Alemania/Estados Unidos',continent:'Europa',era:'Contemporánea',category:'Ensayo',priority:2,difficulty:4,pages:900,status:'pendiente',note:'Una relectura de tres siglos de orden internacional desde la práctica del poder.'},
+{id:'b237',title:'El gran tablero mundial',author:'Zbigniew Brzezinski',country:'Polonia/Estados Unidos',continent:'Europa',era:'Contemporánea',category:'Ensayo',priority:2,difficulty:3,pages:250,status:'pendiente',note:'Geopolítica de Eurasia explicada como un tablero de ajedrez con piezas reales.'},
+{id:'b238',title:'El fin de la historia y el último hombre',author:'Francis Fukuyama',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Ensayo',priority:2,difficulty:3,pages:450,status:'pendiente',note:'La tesis más discutida sobre el triunfo final de la democracia liberal.'},
+{id:'b239',title:'El choque de civilizaciones',author:'Samuel Huntington',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Ensayo',priority:2,difficulty:3,pages:450,status:'pendiente',note:'El mapa cultural que sustituiría a la Guerra Fría como marco de conflicto.'},
+{id:'b240',title:'Auge y caída de las grandes potencias',author:'Paul Kennedy',country:'Reino Unido/Estados Unidos',continent:'Europa',era:'Contemporánea',category:'Ensayo',priority:2,difficulty:3,pages:700,status:'pendiente',note:'Quinientos años de imperios, economía y desgaste militar comparados.'},
+{id:'b241',title:'Los cañones de agosto',author:'Barbara Tuchman',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Ensayo',priority:2,difficulty:3,pages:550,status:'pendiente',note:'Cómo empezó la Primera Guerra Mundial, narrado casi como una novela.'},
+{id:'b242',title:'Tierras de sangre',author:'Timothy Snyder',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Ensayo',priority:3,difficulty:4,pages:550,status:'pendiente',note:'Las masacres de Hitler y Stalin sobre el mismo territorio, comparadas sin atenuantes.'},
+{id:'b243',title:'La riqueza de las naciones',author:'Adam Smith',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Ensayo',priority:2,difficulty:4,pages:1000,status:'pendiente',note:'El texto fundacional de la economía moderna, mano invisible incluida.'},
+{id:'b244',title:'El capital en el siglo XXI',author:'Thomas Piketty',country:'Francia',continent:'Europa',era:'Contemporánea',category:'Ensayo',priority:3,difficulty:3,pages:700,status:'pendiente',note:'Tres siglos de datos sobre desigualdad, condensados en un único argumento.'},
+{id:'b245',title:'Sobre la libertad',author:'John Stuart Mill',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Filosofía',priority:1,difficulty:2,pages:150,status:'pendiente',note:'Dónde termina la libertad individual y empieza el daño a los demás.'},
+{id:'b246',title:'La democracia en América',author:'Alexis de Tocqueville',country:'Francia',continent:'Europa',era:'Clásica',category:'Ensayo',priority:2,difficulty:3,pages:700,status:'pendiente',note:'Un aristócrata francés observando con lucidez el experimento democrático americano.'},
+{id:'b247',title:'Leviatán',author:'Thomas Hobbes',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Filosofía',priority:2,difficulty:4,pages:500,status:'pendiente',note:'El estado como monstruo necesario para evitar la guerra de todos contra todos.'},
+{id:'b248',title:'El largo camino hacia la libertad',author:'Nelson Mandela',country:'Sudáfrica',continent:'África',era:'Contemporánea',category:'Memoria',priority:1,difficulty:2,pages:650,status:'pendiente',note:'Autobiografía de 27 años de prisión a la presidencia, sin resentimiento aparente.'},
+{id:'b249',title:'Yo soy Malala',author:'Malala Yousafzai',country:'Pakistán',continent:'Asia',era:'Contemporánea',category:'Memoria',priority:1,difficulty:1,pages:350,status:'pendiente',note:'El derecho a la educación, defendido por una adolescente bajo amenaza talibán.'},
+{id:'b250',title:'Maus',author:'Art Spiegelman',country:'Estados Unidos/Polonia',continent:'Europa',era:'Contemporánea',category:'Gráfica',priority:2,difficulty:2,pages:300,status:'pendiente',note:'El Holocausto contado en cómic, con los personajes representados como animales.'},
+{id:'b251',title:'El guardián entre el centeno',author:'J. D. Salinger',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:1,difficulty:1,pages:250,status:'pendiente',note:'La voz adolescente que define toda una tradición narrativa posterior.'},
+{id:'b252',title:'Crónica de una muerte anunciada',author:'Gabriel García Márquez',country:'Colombia',continent:'América',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:150,status:'pendiente',note:'Un asesinato anunciado desde la primera línea; estructura de reportaje con el realismo mágico muy contenido.'},
+{id:'b253',title:'Al faro',author:'Virginia Woolf',country:'Reino Unido',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:3,pages:250,status:'pendiente',note:'Tiempo, familia y pérdida narrados con el mismo flujo de conciencia que La señora Dalloway, llevado un paso más allá.'},
+{id:'b254',title:'El proceso',author:'Franz Kafka',country:'Chequia',continent:'Europa',era:'Moderna',category:'Novela',priority:1,difficulty:3,pages:300,status:'leyendo',note:'Un hombre acusado de un crimen que nunca se nombra; la pesadilla burocrático-existencial por excelencia.'},
+{id:'b255',title:'La metamorfosis',author:'Franz Kafka',country:'Chequia',continent:'Europa',era:'Moderna',category:'Cuento',priority:1,difficulty:2,pages:100,status:'pendiente',note:'Brevísima: un hombre se despierta convertido en insecto, y su familia reacciona casi con más naturalidad que él.'},
+{id:'b256',title:'Esperando a Godot',author:'Samuel Beckett',country:'Irlanda/Francia',continent:'Europa',era:'Contemporánea',category:'Teatro',priority:1,difficulty:3,pages:100,status:'pendiente',note:'La obra que define el teatro del absurdo: dos hombres esperan a alguien que nunca llega.'},
+{id:'b257',title:'Final de partida',author:'Samuel Beckett',country:'Irlanda/Francia',continent:'Europa',era:'Contemporánea',category:'Teatro',priority:3,difficulty:4,pages:90,status:'pendiente',note:'Aún más despojada que Godot: cuatro personajes agotando el tiempo que les queda.'},
+{id:'b258',title:'La cantante calva',author:'Eugène Ionesco',country:'Rumania/Francia',continent:'Europa',era:'Contemporánea',category:'Teatro',priority:2,difficulty:3,pages:90,status:'pendiente',note:'Diálogos que se vacían de sentido hasta volverse puro absurdo cómico.'},
+{id:'b259',title:'Rinoceronte',author:'Eugène Ionesco',country:'Rumania/Francia',continent:'Europa',era:'Contemporánea',category:'Teatro',priority:3,difficulty:3,pages:150,status:'pendiente',note:'Un pueblo entero se transforma en rinocerontes; alegoría sobre el conformismo y el fascismo.'},
+{id:'b260',title:'Seis personajes en busca de autor',author:'Luigi Pirandello',country:'Italia',continent:'Europa',era:'Moderna',category:'Teatro',priority:3,difficulty:3,pages:120,status:'pendiente',note:'Unos personajes irrumpen en un ensayo teatral reclamando que se cuente su historia.'},
+{id:'b261',title:'El mito de Sísifo',author:'Albert Camus',country:'Francia/Argelia',continent:'Europa',era:'Moderna',category:'Filosofía',priority:1,difficulty:3,pages:150,status:'pendiente',note:'El ensayo que define el absurdismo: la vida no tiene sentido último y aun así hay que vivirla.'},
+{id:'b262',title:'La peste',author:'Albert Camus',country:'Francia/Argelia',continent:'Europa',era:'Moderna',category:'Novela',priority:1,difficulty:2,pages:300,status:'pendiente',note:'Una epidemia aísla una ciudad entera; el absurdo convertido en novela coral.'},
+{id:'b263',title:'La caída',author:'Albert Camus',country:'Francia/Argelia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:150,status:'pendiente',note:'Un monólogo de confesión y culpa en un bar de Ámsterdam; el Camus más amargo.'},
+{id:'b264',title:'Las moscas',author:'Jean-Paul Sartre',country:'Francia',continent:'Europa',era:'Moderna',category:'Teatro',priority:3,difficulty:3,pages:100,status:'pendiente',note:'El mito de Orestes reescrito como alegato sobre la libertad y la culpa colectiva.'},
+{id:'b265',title:'El ser y la nada',author:'Jean-Paul Sartre',country:'Francia',continent:'Europa',era:'Moderna',category:'Filosofía',priority:4,difficulty:5,pages:800,status:'pendiente',note:'El tratado que sistematiza el existencialismo sartreano; denso de verdad, no apto para fragmentos sueltos.'},
+{id:'b266',title:'Temor y temblor',author:'Søren Kierkegaard',country:'Dinamarca',continent:'Europa',era:'Clásica',category:'Filosofía',priority:3,difficulty:4,pages:200,status:'pendiente',note:'El padre del existencialismo, mucho antes de que existiera la palabra; Abraham e Isaac como problema filosófico.'},
+{id:'b267',title:'En las cimas de la desesperación',author:'Emil Cioran',country:'Rumania/Francia',continent:'Europa',era:'Moderna',category:'Filosofía',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Aforismos pesimistas escritos con apenas veintidós años; absurdismo sin la red de seguridad del humor de Camus.'},
+{id:'b268',title:'San Manuel Bueno, mártir',author:'Miguel de Unamuno',country:'España',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:100,status:'pendiente',note:'Un cura que ha perdido la fe pero sigue dándola a su pueblo; brevísima y muy densa.'},
+{id:'b269',title:'La familia de Pascual Duarte',author:'Camilo José Cela',country:'España',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Tremendismo español: la confesión de un asesino narrada sin un gramo de compasión externa.'},
+{id:'b270',title:'La colmena',author:'Camilo José Cela',country:'España',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:300,status:'pendiente',note:'Más de trescientos personajes cruzándose en el Madrid hambriento de posguerra.'},
+{id:'b271',title:'Luces de bohemia',author:'Ramón María del Valle-Inclán',country:'España',continent:'Europa',era:'Moderna',category:'Teatro',priority:2,difficulty:3,pages:150,status:'pendiente',note:'El esperpento: la realidad española deformada como en un espejo de feria.'},
+{id:'b272',title:'Campos de Castilla',author:'Antonio Machado',country:'España',continent:'Europa',era:'Moderna',category:'Poesía',priority:1,difficulty:2,pages:150,status:'pendiente',note:'El paisaje castellano como espejo del alma; poesía serena y muy citada.'},
+{id:'b273',title:'Poeta en Nueva York',author:'Federico García Lorca',country:'España',continent:'Europa',era:'Moderna',category:'Poesía',priority:2,difficulty:3,pages:150,status:'pendiente',note:'Lorca frente al capitalismo deshumanizado de Manhattan; su poesía más oscura.'},
+{id:'b274',title:'Bodas de sangre',author:'Federico García Lorca',country:'España',continent:'Europa',era:'Moderna',category:'Teatro',priority:1,difficulty:2,pages:100,status:'pendiente',note:'Honor, deseo y fatalidad en la España rural; tragedia muy concentrada.'},
+{id:'b275',title:'Volverás a Región',author:'Juan Benet',country:'España',continent:'Europa',era:'Contemporánea',category:'Novela',priority:4,difficulty:5,pages:350,status:'pendiente',note:'Densísima, casi geológica: el Faulkner español, sin facilidades para el lector.'},
+{id:'b276',title:'Señas de identidad',author:'Juan Goytisolo',country:'España',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:4,pages:400,status:'pendiente',note:'Exilio y ajuste de cuentas con el franquismo, narrado de forma muy fragmentada.'},
+{id:'b277',title:'Corazón tan blanco',author:'Javier Marías',country:'España',continent:'Europa',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:300,status:'pendiente',note:'Secretos familiares y la reticencia a saber, en frases largas y muy hipnóticas.'},
+{id:'b278',title:'Mañana en la batalla piensa en mí',author:'Javier Marías',country:'España',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Una muerte inesperada arrastra al narrador a una espiral de culpa y curiosidad.'},
+{id:'b279',title:'Bartleby y compañía',author:'Enrique Vila-Matas',country:'España',continent:'Europa',era:'Contemporánea',category:'Ensayo',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Un catálogo de escritores que dejaron de escribir; ensayo-novela muy lúdico.'},
+{id:'b280',title:'Entre visillos',author:'Carmen Martín Gaite',country:'España',continent:'Europa',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:300,status:'pendiente',note:'Adolescencia femenina en una capital de provincias durante el franquismo.'},
+{id:'b281',title:'Primera memoria',author:'Ana María Matute',country:'España',continent:'Europa',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:250,status:'pendiente',note:'Infancia perdida en plena Guerra Civil, narrada con una prosa muy simbólica.'},
+{id:'b282',title:'La rebelión de las masas',author:'José Ortega y Gasset',country:'España',continent:'Europa',era:'Moderna',category:'Filosofía',priority:2,difficulty:3,pages:250,status:'pendiente',note:'Diagnóstico sobre la masificación de la sociedad europea de entreguerras.'},
+{id:'b283',title:'Filosofía y poesía',author:'María Zambrano',country:'España',continent:'Europa',era:'Moderna',category:'Filosofía',priority:3,difficulty:3,pages:150,status:'pendiente',note:'Una de las grandes voces filosóficas españolas, poco leída fuera de círculos especializados.'},
+{id:'b284',title:'El árbol de la ciencia',author:'Pío Baroja',country:'España',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'Un médico joven y desencantado frente a la España de la Restauración.'},
+{id:'b285',title:'Don Quijote de la Mancha',author:'Miguel de Cervantes',country:'España',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:3,pages:1000,status:'pendiente',note:'La novela fundacional de la narrativa moderna occidental; extensa, pero se puede leer por episodios sueltos. No debería haber faltado desde el primer día.'},
+{id:'b286',title:'El astillero',author:'Juan Carlos Onetti',country:'Uruguay',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:4,pages:200,status:'pendiente',note:'Decadencia y fracaso narrados con una desolación muy particular del Río de la Plata.'},
+{id:'b287',title:'Nadie encendía las lámparas',author:'Felisberto Hernández',country:'Uruguay',continent:'América',era:'Moderna',category:'Cuento',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Cuentos extraños y musicales, precursores directos del realismo mágico.'},
+{id:'b288',title:'La invención de Morel',author:'Adolfo Bioy Casares',country:'Argentina',continent:'América',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Ciencia ficción filosófica breve: una isla, una máquina y la pregunta de qué es real.'},
+{id:'b289',title:'El obsceno pájaro de la noche',author:'José Donoso',country:'Chile',continent:'América',era:'Contemporánea',category:'Novela',priority:4,difficulty:5,pages:450,status:'pendiente',note:'Una de las novelas más herméticas y perturbadoras del boom latinoamericano.'},
+{id:'b290',title:'Yo el supremo',author:'Augusto Roa Bastos',country:'Paraguay',continent:'América',era:'Contemporánea',category:'Novela',priority:4,difficulty:4,pages:450,status:'pendiente',note:'El monólogo de un dictador paraguayo del siglo XIX, dictando su propia leyenda.'},
+{id:'b291',title:'Los recuerdos del porvenir',author:'Elena Garro',country:'México',continent:'América',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'Un pueblo entero narra su propia historia durante la Revolución; precede a Rulfo en varios de sus hallazgos.'},
+{id:'b292',title:'Balún Canán',author:'Rosario Castellanos',country:'México',continent:'América',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'Infancia, racismo y tierra en Chiapas, narrado en parte por una niña.'},
+{id:'b293',title:'Noticias del Imperio',author:'Fernando del Paso',country:'México',continent:'América',era:'Contemporánea',category:'Novela',priority:4,difficulty:4,pages:700,status:'pendiente',note:'Maximiliano y Carlota narrados desde la locura de ella; ambiciosa y muy extensa.'},
+{id:'b294',title:'Los ríos profundos',author:'José María Arguedas',country:'Perú',continent:'América',era:'Moderna',category:'Novela',priority:2,difficulty:3,pages:250,status:'pendiente',note:'Infancia, quechua y castellano conviviendo en los Andes peruanos.'},
+{id:'b295',title:'El mundo es ancho y ajeno',author:'Ciro Alegría',country:'Perú',continent:'América',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Una comunidad indígena peruana despojada de su tierra poco a poco.'},
+{id:'b296',title:'Ardiente paciencia',author:'Antonio Skármeta',country:'Chile',continent:'América',era:'Contemporánea',category:'Novela',priority:1,difficulty:1,pages:150,status:'pendiente',note:'Más conocida como «El cartero de Neruda»: corta y entrañable.'},
+{id:'b297',title:'Final del juego',author:'Julio Cortázar',country:'Argentina',continent:'América',era:'Contemporánea',category:'Cuento',priority:2,difficulty:2,pages:200,status:'pendiente',note:'Cortázar fuera de Rayuela: el fantástico cotidiano en su forma más pura.'},
+{id:'b298',title:'Bestiario',author:'Julio Cortázar',country:'Argentina',continent:'América',era:'Contemporánea',category:'Cuento',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Su primer libro de cuentos; ya está ahí todo lo extraño que vendría después.'},
+{id:'b299',title:'Las venas abiertas de América Latina',author:'Eduardo Galeano',country:'Uruguay',continent:'América',era:'Contemporánea',category:'Ensayo',priority:2,difficulty:2,pages:450,status:'pendiente',note:'Historia económica de la región narrada casi como literatura; muy influyente y muy discutida.'},
+{id:'b300',title:'El otoño del patriarca',author:'Gabriel García Márquez',country:'Colombia',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:4,pages:350,status:'pendiente',note:'Un dictador centenario narrado en frases que casi no terminan; más exigente que Cien años de soledad.'},
+{id:'b301',title:'El amor en los tiempos del cólera',author:'Gabriel García Márquez',country:'Colombia',continent:'América',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:450,status:'pendiente',note:'Un amor que espera más de cincuenta años; el lado más romántico de García Márquez.'},
+{id:'b302',title:'El llano en llamas',author:'Juan Rulfo',country:'México',continent:'América',era:'Contemporánea',category:'Cuento',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Los cuentos de Rulfo, hermanos de Pedro Páramo, igual de áridos y fantasmales.'},
+{id:'b303',title:'Trilce',author:'César Vallejo',country:'Perú',continent:'América',era:'Moderna',category:'Poesía',priority:3,difficulty:4,pages:150,status:'pendiente',note:'Vanguardia poética peruana: rompe la sintaxis del español como pocos lo han hecho.'},
+{id:'b304',title:'Desolación',author:'Gabriela Mistral',country:'Chile',continent:'América',era:'Moderna',category:'Poesía',priority:2,difficulty:2,pages:200,status:'pendiente',note:'La primera Nobel latinoamericana: poesía de duelo y maternidad frustrada.'},
+{id:'b305',title:'Altazor',author:'Vicente Huidobro',country:'Chile',continent:'América',era:'Moderna',category:'Poesía',priority:3,difficulty:4,pages:150,status:'pendiente',note:'Vanguardia creacionista: el lenguaje se desintegra verso a verso hasta quedar en pura sonoridad.'},
+{id:'b306',title:'Nostalgia de la muerte',author:'Xavier Villaurrutia',country:'México',continent:'América',era:'Moderna',category:'Poesía',priority:3,difficulty:3,pages:100,status:'pendiente',note:'Poesía mexicana obsesionada con la muerte como compañera íntima, no como tragedia.'},
+{id:'b307',title:'Pedro y el capitán',author:'Mario Benedetti',country:'Uruguay',continent:'América',era:'Contemporánea',category:'Teatro',priority:2,difficulty:2,pages:100,status:'pendiente',note:'Un diálogo entre un torturador y su víctima durante una dictadura; muy directo.'},
+{id:'b308',title:'La tregua',author:'Mario Benedetti',country:'Uruguay',continent:'América',era:'Contemporánea',category:'Novela',priority:1,difficulty:1,pages:200,status:'pendiente',note:'Un viudo de mediana edad se enamora de una empleada joven; íntima y muy breve.'},
+{id:'b309',title:'Ifigenia',author:'Teresa de la Parra',country:'Venezuela',continent:'América',era:'Moderna',category:'Novela',priority:3,difficulty:2,pages:350,status:'pendiente',note:'El tedio y las trampas del matrimonio para una joven de clase alta caraqueña.'},
+{id:'b310',title:'Cartucho',author:'Nellie Campobello',country:'México',continent:'América',era:'Moderna',category:'Memoria',priority:2,difficulty:2,pages:150,status:'pendiente',note:'La Revolución mexicana vista por una niña, en viñetas breves y sin sentimentalismo.'},
+{id:'b311',title:'Bajo el volcán',author:'Malcolm Lowry',country:'México/Reino Unido',continent:'América',era:'Moderna',category:'Novela',priority:3,difficulty:4,pages:450,status:'pendiente',note:'Un día de borrachera y autodestrucción en México, con una prosa torrencial.'},
+{id:'b312',title:'La broma',author:'Milan Kundera',country:'Chequia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Una broma de juventud que arruina una vida entera bajo el comunismo checo.'},
+{id:'b313',title:'El libro de la risa y el olvido',author:'Milan Kundera',country:'Chequia/Francia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:250,status:'pendiente',note:'Variaciones sobre la memoria y el poder, a medio camino entre el ensayo y la novela.'},
+{id:'b314',title:'Los hermanos Karamázov',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:4,pages:950,status:'pendiente',note:'La cumbre de Dostoievski: fe, duda y parricidio discutidos dentro de una sola familia.'},
+{id:'b315',title:'Memorias del subsuelo',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:3,pages:150,status:'pendiente',note:'El monólogo resentido que anticipa el existencialismo medio siglo antes de que se llamara así.'},
+{id:'b316',title:'El doble',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:3,difficulty:3,pages:150,status:'pendiente',note:'Un funcionario se topa con un doble idéntico a él; paranoia narrada desde dentro.'},
+{id:'b317',title:'El idiota',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:3,difficulty:4,pages:650,status:'pendiente',note:'Un hombre demasiado bueno para el mundo en el que vive; tan extenso como el resto de Dostoievski.'},
+{id:'b318',title:'Carta al padre',author:'Franz Kafka',country:'Chequia',continent:'Europa',era:'Moderna',category:'Memoria',priority:2,difficulty:2,pages:80,status:'pendiente',note:'Una carta que Kafka nunca llegó a enviar; la clave biográfica de buena parte de su obra.'},
+{id:'b319',title:'América',author:'Franz Kafka',country:'Chequia',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'Inacabada, como El proceso y El castillo: un joven inmigrante perdido en un país que no entiende.'},
+{id:'b320',title:'Las tiendas de color canela',author:'Bruno Schulz',country:'Polonia',continent:'Europa',era:'Moderna',category:'Cuento',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Una infancia transfigurada en mito personal; imaginería muy densa.'},
+{id:'b321',title:'Ferdydurke',author:'Witold Gombrowicz',country:'Polonia',continent:'Europa',era:'Moderna',category:'Novela',priority:4,difficulty:4,pages:300,status:'pendiente',note:'Sátira absurdista sobre la inmadurez impuesta; tan rara como influyente.'},
+{id:'b322',title:'Siddhartha',author:'Hermann Hesse',country:'Alemania',continent:'Europa',era:'Moderna',category:'Novela',priority:1,difficulty:2,pages:150,status:'pendiente',note:'Búsqueda espiritual en clave de la India; brevísima y muy citada.'},
+{id:'b323',title:'El lobo estepario',author:'Hermann Hesse',country:'Alemania',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:3,pages:250,status:'pendiente',note:'La doble naturaleza de un hombre escindido entre lo burgués y lo salvaje.'},
+{id:'b324',title:'Demian',author:'Hermann Hesse',country:'Alemania',continent:'Europa',era:'Moderna',category:'Novela',priority:1,difficulty:2,pages:200,status:'pendiente',note:'Maduración e iniciación espiritual de un adolescente; corta y muy leída.'},
+{id:'b325',title:'Mi siglo',author:'Günter Grass',country:'Alemania',continent:'Europa',era:'Contemporánea',category:'Memoria',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Cien años de historia alemana, uno por capítulo, narrados desde voces distintas cada vez.'},
+{id:'b326',title:'Doktor Faustus',author:'Thomas Mann',country:'Alemania',continent:'Europa',era:'Moderna',category:'Novela',priority:4,difficulty:5,pages:550,status:'pendiente',note:'Un pacto fáustico trasladado al siglo XX alemán y al ascenso del nazismo; muy exigente.'},
+{id:'b327',title:'Muerte en Venecia',author:'Thomas Mann',country:'Alemania',continent:'Europa',era:'Moderna',category:'Cuento',priority:2,difficulty:2,pages:100,status:'pendiente',note:'Obsesión, belleza y decadencia en una Venecia asolada por la epidemia.'},
+{id:'b328',title:'Más allá del bien y del mal',author:'Friedrich Nietzsche',country:'Alemania',continent:'Europa',era:'Clásica',category:'Filosofía',priority:2,difficulty:4,pages:300,status:'pendiente',note:'Aforismos que demuelen la moral tradicional uno detrás de otro.'},
+{id:'b329',title:'El crepúsculo de los ídolos',author:'Friedrich Nietzsche',country:'Alemania',continent:'Europa',era:'Clásica',category:'Filosofía',priority:3,difficulty:3,pages:150,status:'pendiente',note:'Nietzsche más breve y más afilado: un martillazo contra cada ídolo de la cultura occidental.'},
+{id:'b330',title:'Fenomenología del espíritu',author:'G. W. F. Hegel',country:'Alemania',continent:'Europa',era:'Clásica',category:'Filosofía',priority:5,difficulty:5,pages:600,status:'pendiente',note:'El tratado más temido de la filosofía alemana; para cuando ya tengas mucho rodaje detrás.'},
+{id:'b331',title:'La interpretación de los sueños',author:'Sigmund Freud',country:'Austria',continent:'Europa',era:'Moderna',category:'Ciencia',priority:2,difficulty:3,pages:450,status:'pendiente',note:'El libro que inventa el inconsciente como objeto de estudio; fundacional, más allá de su vigencia clínica actual.'},
+{id:'b332',title:'Viaje al fin de la noche',author:'Louis-Ferdinand Céline',country:'Francia',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:4,pages:450,status:'pendiente',note:'Cinismo y desolación desde la Primera Guerra Mundial en adelante; prosa muy directa y muy amarga.'},
+{id:'b333',title:'Las flores del mal',author:'Charles Baudelaire',country:'Francia',continent:'Europa',era:'Clásica',category:'Poesía',priority:2,difficulty:3,pages:200,status:'pendiente',note:'El libro que inventa la sensibilidad moderna en poesía: belleza y podredumbre a la vez.'},
+{id:'b334',title:'Iluminaciones',author:'Arthur Rimbaud',country:'Francia',continent:'Europa',era:'Clásica',category:'Poesía',priority:3,difficulty:3,pages:100,status:'pendiente',note:'Prosa poética visionaria escrita antes de cumplir veinte años.'},
+{id:'b335',title:'Una temporada en el infierno',author:'Arthur Rimbaud',country:'Francia',continent:'Europa',era:'Clásica',category:'Poesía',priority:3,difficulty:3,pages:80,status:'pendiente',note:'El adiós de Rimbaud a la poesía, escrito como un descenso personal al infierno.'},
+{id:'b336',title:'Los alimentos terrestres',author:'André Gide',country:'Francia',continent:'Europa',era:'Moderna',category:'Poesía',priority:3,difficulty:2,pages:150,status:'pendiente',note:'Un canto al deseo y a la disponibilidad ante la vida, en prosa lírica.'},
+{id:'b337',title:'La inmoralista',author:'André Gide',country:'Francia',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Un hombre descubre su propio deseo y se aleja, paso a paso, de la moral que lo formó.'},
+{id:'b338',title:'El amante',author:'Marguerite Duras',country:'Francia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Memoria erótica y colonial en la Indochina francesa, con una prosa muy fragmentada.'},
+{id:'b339',title:'Moderato cantabile',author:'Marguerite Duras',country:'Francia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:2,pages:100,status:'pendiente',note:'Una clase de piano y un crimen escuchado de fondo; mínima en extensión, densa en silencios.'},
+{id:'b340',title:'Si una noche de invierno un viajero',author:'Italo Calvino',country:'Italia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'Una novela que es diez comienzos de novela distintos; metaficción muy lúdica.'},
+{id:'b341',title:'El barón rampante',author:'Italo Calvino',country:'Italia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:250,status:'pendiente',note:'Un niño decide vivir el resto de su vida sobre los árboles; fábula ligera y muy entrañable.'},
+{id:'b342',title:'El sistema periódico',author:'Primo Levi',country:'Italia',continent:'Europa',era:'Contemporánea',category:'Memoria',priority:2,difficulty:2,pages:250,status:'pendiente',note:'La vida de Levi contada a través de elementos químicos, capítulo a capítulo.'},
+{id:'b343',title:'Memorial del convento',author:'José Saramago',country:'Portugal',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:4,pages:350,status:'pendiente',note:'La construcción de un convento real en el siglo XVIII, con una sintaxis tan larga como la propia obra.'},
+{id:'b344',title:'El año de la muerte de Ricardo Reis',author:'José Saramago',country:'Portugal',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Uno de los heterónimos de Pessoa cobra vida propia tras la muerte de su autor.'},
+{id:'b345',title:'Antígona',author:'Sófocles',country:'Grecia',continent:'Europa',era:'Antigua',category:'Teatro',priority:1,difficulty:2,pages:80,status:'pendiente',note:'Ley humana contra ley divina; brevísima y devastadora.'},
+{id:'b346',title:'Las Bacantes',author:'Eurípides',country:'Grecia',continent:'Europa',era:'Antigua',category:'Teatro',priority:2,difficulty:3,pages:90,status:'pendiente',note:'El dios Dioniso castiga a quien se niega a reconocer su culto; tragedia muy violenta.'},
+{id:'b347',title:'Las nubes',author:'Aristófanes',country:'Grecia',continent:'Europa',era:'Antigua',category:'Teatro',priority:3,difficulty:2,pages:90,status:'pendiente',note:'Una sátira sobre Sócrates y los sofistas, escrita en vida del propio Sócrates.'},
+{id:'b348',title:'El asno de oro',author:'Apuleyo',country:'Roma',continent:'Europa',era:'Antigua',category:'Novela',priority:3,difficulty:3,pages:300,status:'pendiente',note:'La única novela latina que sobrevive completa: aventuras, magia y un final místico.'},
+{id:'b349',title:'Sátiras',author:'Juvenal',country:'Roma',continent:'Europa',era:'Antigua',category:'Poesía',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Crítica social romana feroz; de aquí viene la mismísima palabra «satírico».'},
+{id:'b350',title:'La consolación de la filosofía',author:'Boecio',country:'Roma',continent:'Europa',era:'Antigua',category:'Filosofía',priority:2,difficulty:3,pages:150,status:'pendiente',note:'Escrita en prisión, esperando la ejecución; la filosofía como única compañía posible.'},
+{id:'b351',title:'Hamlet',author:'William Shakespeare',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Teatro',priority:1,difficulty:3,pages:150,status:'pendiente',note:'La duda convertida en tragedia; probablemente la obra más citada de la literatura occidental. No debería haber faltado desde el principio.'},
+{id:'b352',title:'Macbeth',author:'William Shakespeare',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Teatro',priority:1,difficulty:3,pages:120,status:'pendiente',note:'Ambición, profecía y culpa; la más breve y vertiginosa de las grandes tragedias.'},
+{id:'b353',title:'El rey Lear',author:'William Shakespeare',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Teatro',priority:2,difficulty:3,pages:150,status:'pendiente',note:'Un padre reparte su reino mal y paga por ello con todo lo que le queda.'},
+{id:'b354',title:'Otelo',author:'William Shakespeare',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Teatro',priority:2,difficulty:3,pages:130,status:'pendiente',note:'Celos manipulados con precisión casi quirúrgica por Yago.'},
+{id:'b355',title:'El paraíso perdido',author:'John Milton',country:'Reino Unido',continent:'Europa',era:'Clásica',category:'Poesía',priority:3,difficulty:4,pages:450,status:'pendiente',note:'Epopeya bíblica en verso sobre la caída de Lucifer y de Adán y Eva; densísima y muy influyente.'},
+{id:'b356',title:'Beowulf',author:'Anónimo',country:'Reino Unido',continent:'Europa',era:'Antigua',category:'Poesía',priority:2,difficulty:3,pages:150,status:'pendiente',note:'El poema épico más antiguo conservado en inglés antiguo: monstruos, héroes y un dragón final.'},
+{id:'b357',title:'El cantar de los nibelungos',author:'Anónimo',country:'Alemania',continent:'Europa',era:'Antigua',category:'Poesía',priority:3,difficulty:3,pages:250,status:'pendiente',note:'La gran epopeya germánica medieval; venganza, traición y un tesoro maldito.'},
+{id:'b358',title:'Romance de los Tres Reinos',author:'Luo Guanzhong',country:'China',continent:'Asia',era:'Clásica',category:'Novela',priority:3,difficulty:4,pages:2000,status:'pendiente',note:'Una de las cuatro grandes novelas clásicas chinas: estrategia, guerra y traición a gran escala.'},
+{id:'b359',title:'Viaje al Oeste',author:"Wu Cheng'en",country:'China',continent:'Asia',era:'Clásica',category:'Novela',priority:2,difficulty:3,pages:1500,status:'pendiente',note:'El Rey Mono y su peregrinación; fantasía, comedia y budismo entremezclados.'},
+{id:'b360',title:'A la orilla del agua',author:"Shi Nai'an",country:'China',continent:'Asia',era:'Clásica',category:'Novela',priority:3,difficulty:4,pages:1800,status:'pendiente',note:'Ciento ocho forajidos contra un imperio corrupto; otra de las cuatro grandes novelas clásicas chinas.'},
+{id:'b361',title:'El pabellón de oro',author:'Yukio Mishima',country:'Japón',continent:'Asia',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'Un joven monje obsesionado con la belleza de un templo termina queriendo destruirlo.'},
+{id:'b362',title:'El país de las nieves',author:'Yasunari Kawabata',country:'Japón',continent:'Asia',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:200,status:'pendiente',note:'Una relación imposible en un balneario nevado; otra muestra del minimalismo de Kawabata.'},
+{id:'b363',title:'Tokio blues (Norwegian Wood)',author:'Haruki Murakami',country:'Japón',continent:'Asia',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:350,status:'pendiente',note:'Duelo y amor adolescente, sin nada del elemento fantástico habitual en Murakami.'},
+{id:'b364',title:'1Q84',author:'Haruki Murakami',country:'Japón',continent:'Asia',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:1300,status:'pendiente',note:'Dos realidades paralelas que empiezan a filtrarse una en la otra; muy extensa.'},
+{id:'b365',title:'El Genji monogatari',author:'Murasaki Shikibu',country:'Japón',continent:'Asia',era:'Antigua',category:'Novela',priority:3,difficulty:4,pages:1100,status:'pendiente',note:'Considerada la primera novela psicológica del mundo, escrita en la corte Heian del siglo XI.'},
+{id:'b366',title:'Godaan (La donación de una vaca)',author:'Munshi Premchand',country:'India',continent:'Asia',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Vida rural y casta en la India colonial, narrada por uno de los padres de la literatura hindi moderna.'},
+{id:'b367',title:'El callejón de los milagros',author:'Naguib Mahfuz',country:'Egipto',continent:'África',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:350,status:'pendiente',note:'Un callejón de El Cairo como microcosmos de toda una época.'},
+{id:'b368',title:'Entre dos palacios',author:'Naguib Mahfuz',country:'Egipto',continent:'África',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:500,status:'pendiente',note:'Primer volumen de la Trilogía de El Cairo: tres generaciones de una misma familia.'},
+{id:'b369',title:'La conferencia de los pájaros',author:'Farid ud-Din Attar',country:'Persia',continent:'Asia',era:'Clásica',category:'Poesía',priority:3,difficulty:4,pages:250,status:'pendiente',note:'Alegoría sufí sobre treinta pájaros que buscan a su rey; mística persa muy influyente.'},
+{id:'b370',title:'Hombres en el sol',author:'Ghassan Kanafani',country:'Palestina',continent:'Asia',era:'Contemporánea',category:'Cuento',priority:2,difficulty:2,pages:100,status:'pendiente',note:'Tres palestinos cruzan una frontera escondidos en un camión cisterna; brevísimo y demoledor.'},
+{id:'b371',title:'Esperando a los bárbaros',author:'J. M. Coetzee',country:'Sudáfrica',continent:'África',era:'Contemporánea',category:'Novela',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Una alegoría sobre el imperio y la barbarie que no necesita nombrar ningún país en concreto.'},
+{id:'b372',title:'Vida y época de Michael K',author:'J. M. Coetzee',country:'Sudáfrica',continent:'África',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Un hombre intenta sobrevivir al margen de una guerra civil sudafricana, casi en silencio.'},
+{id:'b373',title:'Pétalos de sangre',author:"Ngugi wa Thiong'o",country:'Kenia',continent:'África',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Cuatro destinos cruzados en un pueblo keniano transformado por la independencia y luego traicionado por ella.'},
+{id:'b374',title:'Orlando',author:'Virginia Woolf',country:'Reino Unido',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:250,status:'pendiente',note:'Un protagonista que vive siglos y cambia de género a mitad de la novela; juguetona y muy adelantada a su tiempo.'},
+{id:'b375',title:'Las olas',author:'Virginia Woolf',country:'Reino Unido',continent:'Europa',era:'Moderna',category:'Novela',priority:4,difficulty:4,pages:250,status:'pendiente',note:'La novela más experimental de Woolf: seis voces fundiéndose casi en poesía.'},
+{id:'b376',title:'¡Absalón, Absalón!',author:'William Faulkner',country:'Estados Unidos',continent:'América',era:'Moderna',category:'Novela',priority:4,difficulty:5,pages:400,status:'pendiente',note:'Probablemente la novela más difícil de Faulkner: una historia familiar reconstruida desde versiones contradictorias.'},
+{id:'b377',title:'Mientras agonizo',author:'William Faulkner',country:'Estados Unidos',continent:'América',era:'Moderna',category:'Novela',priority:3,difficulty:4,pages:250,status:'pendiente',note:'Una familia lleva el cadáver de la madre a enterrar; quince narradores distintos se van turnando.'},
+{id:'b378',title:'Pálido fuego',author:'Vladimir Nabokov',country:'Rusia/Estados Unidos',continent:'Europa',era:'Contemporánea',category:'Novela',priority:4,difficulty:5,pages:350,status:'pendiente',note:'Un poema, su comentario académico y una trama oculta entre las notas a pie de página.'},
+{id:'b379',title:'El arco iris de gravedad',author:'Thomas Pynchon',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:5,difficulty:5,pages:900,status:'pendiente',note:'Una de las novelas más laberínticas de la literatura estadounidense de posguerra.'},
+{id:'b380',title:'Submundo',author:'Don DeLillo',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:4,difficulty:4,pages:950,status:'pendiente',note:'Medio siglo de historia estadounidense organizado alrededor de una pelota de béisbol.'},
+{id:'b381',title:'Ruido de fondo',author:'Don DeLillo',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Consumo, miedo a la muerte y una nube tóxica acercándose a una familia suburbana.'},
+{id:'b382',title:'Canción de Salomón',author:'Toni Morrison',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:350,status:'pendiente',note:'Identidad, herencia y vuelo como metáfora de libertad, en clave de realismo mágico afroamericano.'},
+{id:'b383',title:'El doctor Zhivago',author:'Borís Pasternak',country:'Rusia',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:3,pages:550,status:'pendiente',note:'Revolución rusa y amor imposible; le costó el Nobel que su autor se vio obligado a rechazar.'},
+{id:'b384',title:'Réquiem',author:'Anna Ajmátova',country:'Rusia',continent:'Europa',era:'Moderna',category:'Poesía',priority:2,difficulty:2,pages:80,status:'pendiente',note:'Poesía sobre el terror estalinista, memorizada en secreto porque era peligroso escribirla en papel.'},
+{id:'b385',title:'El corazón de un perro',author:'Mijaíl Bulgákov',country:'Rusia',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Un experimento convierte a un perro en humano; sátira soviética con mucho humor negro.'},
+{id:'b386',title:'Relatos de Kolimá',author:'Varlam Shalámov',country:'Rusia/URSS',continent:'Europa',era:'Contemporánea',category:'Cuento',priority:3,difficulty:3,pages:500,status:'pendiente',note:'Relatos sobre los campos de trabajo soviéticos, más fríos y precisos que el Gulag de Solzhenitsyn.'},
+{id:'b387',title:'La saga de Njál',author:'Anónimo',country:'Islandia',continent:'Europa',era:'Antigua',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Una de las grandes sagas islandesas medievales: honor, venganza y litigios legales en el norte vikingo.'},
+{id:'b388',title:'El doctor Glas',author:'Hjalmar Söderberg',country:'Suecia',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:2,pages:150,status:'pendiente',note:'Un médico contempla el asesinato como acto moral; muy adelantada a su época, de 1905.'},
+{id:'b389',title:'Cuatro cuartetos',author:'T. S. Eliot',country:'Estados Unidos/Reino Unido',continent:'Europa',era:'Moderna',category:'Poesía',priority:3,difficulty:4,pages:100,status:'pendiente',note:'Poesía densamente filosófica sobre el tiempo y la eternidad.'},
+{id:'b390',title:'La tierra baldía',author:'T. S. Eliot',country:'Estados Unidos/Reino Unido',continent:'Europa',era:'Moderna',category:'Poesía',priority:3,difficulty:4,pages:80,status:'pendiente',note:'El poema que define la fragmentación moderna; denso en alusiones y muy citado.'},
+{id:'b391',title:'Howl y otros poemas',author:'Allen Ginsberg',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Poesía',priority:2,difficulty:2,pages:100,status:'pendiente',note:'El poema que definió a la generación beat; ritmo torrencial y mucha rabia.'},
+{id:'b392',title:'En el camino',author:'Jack Kerouac',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:1,difficulty:2,pages:300,status:'pendiente',note:'Carretera, jazz y una búsqueda sin destino claro; la novela beat por excelencia.'},
+{id:'b393',title:'El almuerzo desnudo',author:'William S. Burroughs',country:'Estados Unidos',continent:'América',era:'Contemporánea',category:'Novela',priority:4,difficulty:4,pages:250,status:'pendiente',note:'Narrativa fragmentada y muy perturbadora; entrada dura incluso dentro de la generación beat.'},
+{id:'b394',title:'Cantos',author:'Ezra Pound',country:'Estados Unidos',continent:'América',era:'Moderna',category:'Poesía',priority:4,difficulty:5,pages:800,status:'pendiente',note:'Poema-río de décadas de trabajo, lleno de citas en otros idiomas; de los más exigentes de la lista.'}
+];
+
+/* ===================== estado ===================== */
+let state = {
+  books: [],
+  view: 'table',
+  filters:{search:'',continent:'todas',category:'todas',era:'todas',status:'todas',priority:'todas',difficulty:'todas',length:'todas'},
+  sort:'priority-asc'
+};
+
+/* ===================== almacenamiento (Firestore) ===================== */
+let docRef = null;
+let saveTimer = null;
+
+function setSyncStatus(stateName){
+  const el = document.getElementById('sync-status');
+  if(!el) return;
+  el.dataset.state = stateName;
+  const labels = {guardando:'guardando…', guardado:'guardado', error:'error al guardar'};
+  el.querySelector('.sync-label').textContent = labels[stateName] || '';
+}
+
+async function loadBooks(){
+  let saved = null;
+  try{
+    const snap = await getDoc(docRef);
+    if(snap.exists()){
+      const data = snap.data();
+      saved = Array.isArray(data.books) ? data.books : null;
+    }
+  }catch(e){ console.error('No se pudo leer de Firestore', e); saved = null; }
+
+  if(!saved){
+    state.books = seedBooks.map(b=>({...b}));
+  }else{
+    const savedMap = {};
+    saved.forEach(b=>{ savedMap[b.id] = b; });
+    const seedIds = new Set(seedBooks.map(b=>b.id));
+    // El contenido (título, metadatos, notas...) siempre viene de la versión más reciente del atlas;
+    // el estado de lectura de cada libro se conserva desde lo que ya tenías guardado.
+    const merged = seedBooks.map(seedBook=>{
+      const prev = savedMap[seedBook.id];
+      return prev ? {...seedBook, status:prev.status} : {...seedBook};
+    });
+    // Cualquier libro que hayas añadido tú misma con "+ Añadir libro" (no forma parte del atlas curado) se conserva tal cual.
+    saved.forEach(b=>{ if(!seedIds.has(b.id)) merged.push(b); });
+    state.books = merged;
+  }
+  try{ await flushSave(); }catch(e){}
+}
+
+function saveBooks(){
+  clearTimeout(saveTimer);
+  setSyncStatus('guardando');
+  saveTimer = setTimeout(flushSave, 900);
+}
+
+async function flushSave(){
+  clearTimeout(saveTimer);
+  if(!docRef) return;
+  try{
+    setSyncStatus('guardando');
+    await setDoc(docRef, { books: state.books, updatedAt: Date.now() });
+    setSyncStatus('guardado');
+  }catch(e){
+    console.error('No se pudo guardar en Firestore', e);
+    setSyncStatus('error');
+  }
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushSave(); });
+window.addEventListener('pagehide', flushSave);
+
+/* ===================== utilidades ===================== */
+function esc(str){
+  return String(str==null?'':str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function hashStr(str){let h=0;for(let i=0;i<str.length;i++){h=(h*31+str.charCodeAt(i))>>>0;}return h;}
+function lengthBucket(p){ p=Number(p)||0; if(p<250) return 'corta'; if(p<=500) return 'media'; return 'larga'; }
+function optionList(values, current, labels){
+  return values.map(v=>`<option value="${esc(v)}"${v===current?' selected':''}>${esc(labels&&labels[v]?labels[v]:v)}</option>`).join('');
+}
+
+/* ===================== filtros y orden ===================== */
+function getFiltered(){
+  const f = state.filters;
+  let list = state.books.filter(b=>{
+    if(f.search){
+      const q=f.search.toLowerCase();
+      const hay = (b.title+' '+b.author+' '+b.country).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    if(f.continent!=='todas' && b.continent!==f.continent) return false;
+    if(f.category!=='todas' && b.category!==f.category) return false;
+    if(f.era!=='todas' && b.era!==f.era) return false;
+    if(f.status!=='todas' && b.status!==f.status) return false;
+    if(f.priority!=='todas' && String(b.priority)!==f.priority) return false;
+    if(f.difficulty!=='todas' && String(b.difficulty)!==f.difficulty) return false;
+    if(f.length!=='todas' && lengthBucket(b.pages)!==f.length) return false;
+    return true;
+  });
+  const s = state.sort;
+  list = [...list].sort((a,b)=>{
+    switch(s){
+      case 'priority-asc': return a.priority-b.priority || a.title.localeCompare(b.title);
+      case 'priority-desc': return b.priority-a.priority || a.title.localeCompare(b.title);
+      case 'difficulty-asc': return a.difficulty-b.difficulty || a.title.localeCompare(b.title);
+      case 'difficulty-desc': return b.difficulty-a.difficulty || a.title.localeCompare(b.title);
+      case 'title-asc': return a.title.localeCompare(b.title);
+      case 'country-asc': return a.country.localeCompare(b.country);
+      case 'pages-asc': return a.pages-b.pages;
+      case 'pages-desc': return b.pages-a.pages;
+      default: return 0;
+    }
+  });
+  return list;
+}
+
+/* ===================== render: stats ===================== */
+function renderStats(){
+  const books = state.books, total = books.length;
+  const leidos = books.filter(b=>b.status==='leído').length;
+  const pct = total ? Math.round(leidos/total*100) : 0;
+  const countries = new Set(books.map(b=>b.country)).size;
+  const totalPages = books.reduce((s,b)=>s+(Number(b.pages)||0),0);
+  const avgDiff = total ? (books.reduce((s,b)=>s+Number(b.difficulty),0)/total).toFixed(1) : '0.0';
+  document.getElementById('app').querySelector('#stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Libros en total</div></div>
+    <div class="stat-card"><div class="stat-value">${pct}%</div><div class="stat-label">Leídos</div></div>
+    <div class="stat-card"><div class="stat-value">${countries}</div><div class="stat-label">Países / culturas</div></div>
+    <div class="stat-card"><div class="stat-value">${totalPages.toLocaleString('es-ES')}</div><div class="stat-label">Páginas totales</div></div>
+    <div class="stat-card"><div class="stat-value">${avgDiff}</div><div class="stat-label">Dificultad media</div></div>
+  `;
+}
+
+/* ===================== render: carta estelar ===================== */
+const PLOT = {x0:74,x1:716,y0:34,y1:240};
+function xFor(p){ return PLOT.x0 + (p-1)/4*(PLOT.x1-PLOT.x0); }
+function yFor(d){ return PLOT.y1 - (d-1)/4*(PLOT.y1-PLOT.y0); }
+
+function renderChart(){
+  const books = state.books;
+  const pagesArr = books.map(b=>Number(b.pages)||0);
+  const minP = Math.min(...pagesArr), maxP = Math.max(...pagesArr);
+  function rFor(p){
+    if(maxP===minP) return 6;
+    const t = Math.sqrt((p-minP)/(maxP-minP));
+    return 4 + 7*t;
+  }
+  let grid='';
+  for(let i=1;i<=5;i++){
+    grid += `<line x1="${xFor(i)}" y1="${PLOT.y0}" x2="${xFor(i)}" y2="${PLOT.y1}" stroke="rgba(255,255,255,.07)"/>`;
+    grid += `<line x1="${PLOT.x0}" y1="${yFor(i)}" x2="${PLOT.x1}" y2="${yFor(i)}" stroke="rgba(255,255,255,.07)"/>`;
+    grid += `<text x="${xFor(i)}" y="${PLOT.y1+16}" font-size="9" fill="rgba(244,239,225,.45)" text-anchor="middle" font-family="IBM Plex Mono">${i}</text>`;
+    grid += `<text x="${PLOT.x0-10}" y="${yFor(i)+3}" font-size="9" fill="rgba(244,239,225,.45)" text-anchor="end" font-family="IBM Plex Mono">${i}</text>`;
+  }
+  let dots='';
+  books.forEach(b=>{
+    const h = hashStr(b.id+b.title);
+    const jx = (h%44)-22;
+    const jy = (Math.floor(h/44)%26)-13;
+    const cx = Math.min(PLOT.x1+8, Math.max(PLOT.x0-8, xFor(b.priority)+jx));
+    const cy = Math.min(PLOT.y1+8, Math.max(PLOT.y0-8, yFor(b.difficulty)+jy));
+    const color = CONTINENT_COLOR[b.continent] || '#999';
+    dots += `<circle data-id="${esc(b.id)}" cx="${cx}" cy="${cy}" r="${rFor(Number(b.pages)||0).toFixed(1)}" fill="${color}" fill-opacity="${b.status==='leído'?0.95:0.55}" stroke="${b.status==='leído'?color:'rgba(0,0,0,0)'}" stroke-width="1.5" style="cursor:pointer;"/>`;
+  });
+  const svg = `
+  <svg viewBox="0 0 790 268" xmlns="http://www.w3.org/2000/svg">
+    ${grid}
+    <text x="${(PLOT.x0+PLOT.x1)/2}" y="262" font-size="9.5" letter-spacing="1" fill="rgba(224,172,82,.75)" text-anchor="middle" font-family="IBM Plex Mono">PRIORIDAD — universal → nicho</text>
+    <text x="14" y="${(PLOT.y0+PLOT.y1)/2}" font-size="9.5" letter-spacing="1" fill="rgba(224,172,82,.75)" text-anchor="middle" font-family="IBM Plex Mono" transform="rotate(-90 14 ${(PLOT.y0+PLOT.y1)/2})">DIFICULTAD — fácil → difícil</text>
+    <text x="${PLOT.x0+6}" y="${PLOT.y1-8}" font-size="9" fill="rgba(244,239,225,.4)" font-style="italic" font-family="Inter">↙ empieza aquí</text>
+    <text x="${PLOT.x1-6}" y="${PLOT.y0+13}" font-size="9" fill="rgba(244,239,225,.4)" font-style="italic" text-anchor="end" font-family="Inter">para más adelante ↗</text>
+    ${dots}
+  </svg>`;
+  const panel = document.getElementById('chart-svg-wrap');
+  panel.innerHTML = svg;
+  const legend = CONTINENTS.map(c=>`<span><span class="legend-dot" style="background:${CONTINENT_COLOR[c]}"></span>${c}</span>`).join('');
+  document.getElementById('chart-legend').innerHTML = legend + `<span style="opacity:.6">· tamaño = nº de páginas · relleno sólido = leído</span>`;
+}
+
+/* ===================== render: mini gráficos ===================== */
+function barPanel(containerId, title, rows, total){
+  const html = rows.map(r=>{
+    const pct = total ? Math.round(r.count/total*100) : 0;
+    return `<div class="bar-row">
+      <div class="bar-label" title="${esc(r.label)}">${esc(r.label)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${r.color}"></div></div>
+      <div class="bar-count">${r.count}</div>
+    </div>`;
+  }).join('');
+  document.getElementById(containerId).innerHTML = `<div class="mini-title">${title}</div>${html}`;
+}
+function renderMiniCharts(){
+  const books = state.books, total = books.length;
+
+  const statusRows = STATUSES.map(s=>({label:s,count:books.filter(b=>b.status===s).length,color:STATUS_COLOR[s]}));
+  barPanel('mini-status','Por estado de lectura', statusRows, total);
+
+  const contRows = CONTINENTS.map(c=>({label:c,count:books.filter(b=>b.continent===c).length,color:CONTINENT_COLOR[c]}));
+  barPanel('mini-continent','Por continente / cultura', contRows, total);
+
+  const diffRows = [1,2,3,4,5].map(n=>({label:'Nivel '+n,count:books.filter(b=>Number(b.difficulty)===n).length,color:'#2F6F6F'}));
+  barPanel('mini-difficulty','Por dificultad (1–5)', diffRows, total);
+
+  const prioRows = [1,2,3,4,5].map(n=>({label:'Nivel '+n,count:books.filter(b=>Number(b.priority)===n).length,color:'#C1592A'}));
+  barPanel('mini-priority','Por prioridad (1=universal)', prioRows, total);
+}
+
+/* ===================== render: controles ===================== */
+function renderControlsState(){
+  document.getElementById('filter-continent').value = state.filters.continent;
+  document.getElementById('filter-category').value = state.filters.category;
+  document.getElementById('filter-era').value = state.filters.era;
+  document.getElementById('filter-status').value = state.filters.status;
+  document.getElementById('filter-priority').value = state.filters.priority;
+  document.getElementById('filter-difficulty').value = state.filters.difficulty;
+  document.getElementById('filter-length').value = state.filters.length;
+  document.getElementById('sort-select').value = state.sort;
+  document.querySelectorAll('.view-toggle button').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.view===state.view);
+  });
+}
+
+/* ===================== render: lista (tabla / tarjetas) ===================== */
+function priorityOption(b){
+  const labels={1:'1 · universal',2:'2',3:'3',4:'4',5:'5 · nicho'};
+  return `<select class="field-select" data-id="${b.id}" data-field="priority">${optionList([1,2,3,4,5],b.priority,labels)}</select>`;
+}
+function difficultyOption(b){
+  const labels={1:'1 · fácil',2:'2',3:'3',4:'4',5:'5 · difícil'};
+  return `<select class="field-select" data-id="${b.id}" data-field="difficulty">${optionList([1,2,3,4,5],b.difficulty,labels)}</select>`;
+}
+function continentOption(b){ return `<select class="field-select" data-id="${b.id}" data-field="continent">${optionList(CONTINENTS,b.continent)}</select>`; }
+function categoryOption(b){ return `<select class="field-select" data-id="${b.id}" data-field="category">${optionList(CATEGORIES,b.category)}</select>`; }
+function eraOption(b){ return `<select class="field-select" data-id="${b.id}" data-field="era">${optionList(ERAS,b.era)}</select>`; }
+function statusOption(b){ return `<select class="field-select status-select s-${b.status}" data-id="${b.id}" data-field="status">${optionList(STATUSES,b.status)}</select>`; }
+function pagesInput(b){ return `<input type="number" min="1" class="field-number" data-id="${b.id}" data-field="pages" value="${Number(b.pages)||0}">`; }
+
+function renderTable(list){
+  if(list.length===0) return `<div class="empty-state">No hay libros que coincidan con estos filtros.</div>`;
+  const rows = list.map(b=>`
+    <tr>
+      <td class="title-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div></td>
+      <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)}</div></td>
+      <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="country">${esc(b.country)}</div></td>
+      <td>${categoryOption(b)}</td>
+      <td>${continentOption(b)}</td>
+      <td>${eraOption(b)}</td>
+      <td>${priorityOption(b)}</td>
+      <td>${difficultyOption(b)}</td>
+      <td>${pagesInput(b)}</td>
+      <td>${statusOption(b)}</td>
+      <td class="note-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="note">${esc(b.note)}</div></td>
+      <td><button class="btn-delete" data-id="${b.id}" title="Eliminar">×</button></td>
+    </tr>`).join('');
+  return `<div class="table-scroll"><table>
+    <thead><tr>
+      <th>Título</th><th>Autor</th><th>País</th><th>Categoría</th><th>Continente</th><th>Época</th>
+      <th>Prioridad</th><th>Dificultad</th><th>Páginas</th><th>Estado</th><th>Nota</th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function renderCards(list){
+  if(list.length===0) return `<div class="empty-state">No hay libros que coincidan con estos filtros.</div>`;
+  const cards = list.map(b=>`
+    <div class="book-card">
+      <div class="card-title" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div>
+      <div class="card-author" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)} — <span contenteditable="true" data-id="${b.id}" data-field="country" style="display:inline">${esc(b.country)}</span></div>
+      <div class="card-meta-row">${categoryOption(b)}${continentOption(b)}${eraOption(b)}</div>
+      <div class="card-meta-row">${priorityOption(b)}${difficultyOption(b)}${pagesInput(b)}${statusOption(b)}</div>
+      <div class="card-note" contenteditable="true" data-id="${b.id}" data-field="note">${esc(b.note)}</div>
+      <div class="card-footer"><button class="btn-delete" data-id="${b.id}" title="Eliminar">× eliminar</button></div>
+    </div>`).join('');
+  return `<div class="cards-grid">${cards}</div>`;
+}
+
+function renderList(){
+  const list = getFiltered();
+  document.getElementById('result-count').textContent = `${list.length} de ${state.books.length} libros`;
+  document.getElementById('list-container').innerHTML = state.view==='table' ? renderTable(list) : renderCards(list);
+}
+
+/* ===================== mutaciones ===================== */
+function updateBook(id, field, value){
+  const b = state.books.find(x=>x.id===id);
+  if(!b) return;
+  b[field]=value;
+  saveBooks();
+  renderStats(); renderChart(); renderMiniCharts();
+}
+function addBook(){
+  const id = 'b'+Date.now();
+  state.books.unshift({id,title:'Nuevo libro',author:'',country:'',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:300,status:'pendiente',note:''});
+  saveBooks();
+  state.filters = {search:'',continent:'todas',category:'todas',era:'todas',status:'todas',priority:'todas',difficulty:'todas',length:'todas'};
+  document.getElementById('search-input').value='';
+  renderControlsState();
+  renderAll();
+  const el = document.querySelector(`.field-text[data-id="${id}"][data-field="title"]`);
+  if(el){ el.focus(); document.execCommand && window.getSelection().selectAllChildren(el); }
+}
+function deleteBook(id){
+  const b = state.books.find(x=>x.id===id);
+  if(!b) return;
+  if(!confirm(`¿Eliminar «${b.title}» de tu atlas?`)) return;
+  state.books = state.books.filter(x=>x.id!==id);
+  saveBooks();
+  renderAll();
+}
+function resetLibrary(){
+  if(!confirm('Esto sustituye tu lista actual por los 394 libros curados originales (perderás los que hayas añadido tú misma). ¿Continuar?')) return;
+  state.books = seedBooks.map(b=>({...b}));
+  saveBooks();
+  renderAll();
+}
+
+/* ===================== tooltip carta estelar ===================== */
+let tooltipEl;
+function setupTooltip(){
+  const panel = document.getElementById('chart-panel');
+  tooltipEl = document.getElementById('chart-tooltip');
+  panel.addEventListener('mouseover', e=>{
+    if(e.target.tagName!=='circle') return;
+    const id = e.target.getAttribute('data-id');
+    const b = state.books.find(x=>x.id===id);
+    if(!b) return;
+    const rect = panel.getBoundingClientRect();
+    tooltipEl.style.left = (e.clientX-rect.left)+'px';
+    tooltipEl.style.top = (e.clientY-rect.top-6)+'px';
+    tooltipEl.innerHTML = `<b>${esc(b.title)}</b><br>${esc(b.author)} — ${esc(b.country)}<br>Prioridad ${b.priority} · Dificultad ${b.difficulty} · ${b.pages}p · ${esc(b.status)}`;
+    tooltipEl.style.display='block';
+  });
+  panel.addEventListener('mousemove', e=>{
+    if(tooltipEl.style.display!=='block') return;
+    const rect = panel.getBoundingClientRect();
+    tooltipEl.style.left = (e.clientX-rect.left)+'px';
+    tooltipEl.style.top = (e.clientY-rect.top-6)+'px';
+  });
+  panel.addEventListener('mouseout', e=>{
+    if(e.target.tagName==='circle') tooltipEl.style.display='none';
+  });
+}
+
+/* ===================== eventos delegados ===================== */
+function setupEvents(){
+  const app = document.getElementById('app');
+
+  app.addEventListener('click', e=>{
+    const del = e.target.closest('.btn-delete');
+    if(del){ deleteBook(del.dataset.id); return; }
+    const addBtn = e.target.closest('.btn-add');
+    if(addBtn){ addBook(); return; }
+    const signoutBtn = e.target.closest('#btn-signout');
+    if(signoutBtn){ flushSave().finally(()=>signOut(auth)); return; }
+    const resetBtn = e.target.closest('.btn-reset');
+    if(resetBtn){ resetLibrary(); return; }
+    const viewBtn = e.target.closest('.view-toggle button');
+    if(viewBtn){ state.view = viewBtn.dataset.view; renderControlsState(); renderList(); return; }
+  });
+
+  app.addEventListener('change', e=>{
+    const t = e.target;
+    if(t.classList.contains('field-select') || t.classList.contains('field-number')){
+      const id=t.dataset.id, field=t.dataset.field;
+      let val = t.value;
+      if(['priority','difficulty','pages'].includes(field)) val = Number(val);
+      if(field==='status'){ t.className = 'field-select status-select s-'+val; }
+      updateBook(id, field, val);
+      return;
+    }
+    if(t.dataset.filter){
+      state.filters[t.dataset.filter] = t.value;
+      renderList();
+      return;
+    }
+    if(t.id==='sort-select'){ state.sort = t.value; renderList(); return; }
+  });
+
+  app.addEventListener('input', e=>{
+    if(e.target.id==='search-input'){
+      state.filters.search = e.target.value;
+      renderList();
+    }
+  });
+
+  app.addEventListener('focusout', e=>{
+    const t = e.target;
+    if(t.matches('[contenteditable="true"]') && t.dataset.id && t.dataset.field){
+      updateBook(t.dataset.id, t.dataset.field, t.textContent.trim());
+    }
+  });
+}
+
+/* ===================== shell HTML ===================== */
+function buildShell(){
+  document.getElementById('app').innerHTML = `
+    <div class="app-header">
+      <h1>Atlas de lecturas</h1>
+      <div class="sync-row">
+        <div class="app-subtitle" id="header-subtitle"></div>
+        <div class="sync-status" id="sync-status" data-state="guardado"><span class="sync-dot"></span><span class="sync-label">guardado</span></div>
+        <button class="btn-signout" id="btn-signout">cerrar sesión</button>
+      </div>
+    </div>
+    <div id="stats-row" class="stats-row"></div>
+
+    <div class="panel-label">Carta estelar · prioridad vs. dificultad</div>
+    <div class="chart-panel" id="chart-panel">
+      <div id="chart-svg-wrap"></div>
+      <div class="chart-legend" id="chart-legend"></div>
+      <div class="chart-tooltip" id="chart-tooltip"></div>
+    </div>
+
+    <div class="mini-charts">
+      <div class="mini-card" id="mini-status"></div>
+      <div class="mini-card" id="mini-continent"></div>
+      <div class="mini-card" id="mini-difficulty"></div>
+      <div class="mini-card" id="mini-priority"></div>
+    </div>
+
+    <div class="panel-label">Explorar y editar</div>
+    <div class="controls">
+      <input type="text" id="search-input" placeholder="Buscar título, autor o país…">
+      <select id="filter-continent" data-filter="continent"><option value="todas">Todos los continentes</option>${optionList(CONTINENTS,'todas')}</select>
+      <select id="filter-category" data-filter="category"><option value="todas">Todas las categorías</option>${optionList(CATEGORIES,'todas')}</select>
+      <select id="filter-era" data-filter="era"><option value="todas">Todas las épocas</option>${optionList(ERAS,'todas')}</select>
+      <select id="filter-status" data-filter="status"><option value="todas">Cualquier estado</option>${optionList(STATUSES,'todas')}</select>
+      <select id="filter-priority" data-filter="priority">
+        <option value="todas">Cualquier prioridad</option>
+        ${[1,2,3,4,5].map(n=>`<option value="${n}">Prioridad ${n}</option>`).join('')}
+      </select>
+      <select id="filter-difficulty" data-filter="difficulty">
+        <option value="todas">Cualquier dificultad</option>
+        ${[1,2,3,4,5].map(n=>`<option value="${n}">Dificultad ${n}</option>`).join('')}
+      </select>
+      <select id="filter-length" data-filter="length">
+        <option value="todas">Cualquier extensión</option>
+        <option value="corta">Corta (&lt;250p)</option>
+        <option value="media">Media (250–500p)</option>
+        <option value="larga">Larga (&gt;500p)</option>
+      </select>
+      <select id="sort-select">
+        <option value="priority-asc">Ordenar: prioridad — universal primero</option>
+        <option value="priority-desc">Ordenar: prioridad — nicho primero</option>
+        <option value="difficulty-asc">Ordenar: dificultad — fácil primero</option>
+        <option value="difficulty-desc">Ordenar: dificultad — difícil primero</option>
+        <option value="title-asc">Ordenar: título A–Z</option>
+        <option value="country-asc">Ordenar: país A–Z</option>
+        <option value="pages-asc">Ordenar: páginas — menos primero</option>
+        <option value="pages-desc">Ordenar: páginas — más primero</option>
+      </select>
+      <div class="grow-gap"></div>
+      <div class="view-toggle">
+        <button data-view="table" class="active">Tabla</button>
+        <button data-view="cards">Tarjetas</button>
+      </div>
+      <button class="btn-add">+ Añadir libro</button>
+      <div class="controls-footer">
+        <span class="result-count" id="result-count"></span>
+        <button class="btn-reset">Restablecer los 394 originales</button>
+      </div>
+    </div>
+
+    <div id="list-container"></div>
+
+    <div class="footer-note">Tus cambios se guardan automáticamente y siguen aquí la próxima vez que abras este atlas.</div>
+  `;
+}
+
+/* ===================== render total ===================== */
+function renderAll(){
+  document.getElementById('header-subtitle').textContent = `${state.books.length} libros · ${new Set(state.books.map(b=>b.continent)).size} continentes · editable`;
+  renderStats();
+  renderChart();
+  renderMiniCharts();
+  renderControlsState();
+  renderList();
+}
+
+/* ===================== init ===================== */
+async function initApp(uid){
+  docRef = doc(db, 'users', uid, 'atlas', 'lecturas');
+  await loadBooks();
+  buildShell();
+  setupEvents();
+  setupTooltip();
+  renderAll();
+}
+
+function showApp(){
+  document.getElementById('auth-gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+function showGate(){
+  document.getElementById('auth-gate').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+getRedirectResult(auth).catch(err=>{
+  console.error('Error en el inicio de sesión:', err);
+  const el = document.getElementById('auth-error');
+  if(el) el.textContent = 'No se pudo iniciar sesión. Inténtalo de nuevo.';
+});
+
+document.getElementById('google-login-btn').addEventListener('click', ()=>{
+  signInWithRedirect(auth, googleProvider);
+});
+
+onAuthStateChanged(auth, user=>{
+  if(user){ showApp(); initApp(user.uid); }
+  else{ showGate(); }
+});
+
+})();
+</script>
+</body>
+</html>

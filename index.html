@@ -270,10 +270,36 @@ td.note-cell .field-text:focus{max-width:320px;white-space:normal;overflow:visib
   <div id="loading" class="empty-state">Cargando tu atlas de lecturas…</div>
 </div>
 
+<script>
+function atlasShowFatal(msg){
+  var d = document.getElementById('fatal-error-box');
+  if(!d){
+    d = document.createElement('div');
+    d.id = 'fatal-error-box';
+    d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#C1592A;color:#fff;padding:14px;font-family:monospace;font-size:12px;z-index:99999;white-space:pre-wrap;max-height:50vh;overflow:auto;';
+    document.body.appendChild(d);
+  }
+  d.textContent += (d.textContent ? '\n\n' : '') + msg;
+}
+window.addEventListener('error', function(e){
+  atlasShowFatal('Error: ' + e.message + (e.filename ? ' ('+e.filename.split('/').pop()+':'+e.lineno+')' : ''));
+});
+window.addEventListener('unhandledrejection', function(e){
+  var reason = e.reason && e.reason.message ? e.reason.message : e.reason;
+  atlasShowFatal('Promesa sin gestionar: ' + reason);
+});
+setTimeout(function(){
+  var gate = document.getElementById('auth-gate');
+  var app = document.getElementById('app');
+  if(gate && app && getComputedStyle(gate).display === 'none' && getComputedStyle(app).display === 'none'){
+    atlasShowFatal('La app no ha terminado de cargar después de varios segundos. Probablemente algún script (Firebase u otro) no se ha podido cargar.');
+  }
+}, 4000);
+</script>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
 /* ===================== firebase ===================== */
 const firebaseConfig = {
@@ -628,9 +654,4 @@ const seedBooks = [
 {id:'b314',title:'Los hermanos Karamázov',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:4,pages:950,status:'pendiente',note:'La cumbre de Dostoievski: fe, duda y parricidio discutidos dentro de una sola familia.'},
 {id:'b315',title:'Memorias del subsuelo',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:3,pages:150,status:'pendiente',note:'El monólogo resentido que anticipa el existencialismo medio siglo antes de que se llamara así.'},
 {id:'b316',title:'El doble',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:3,difficulty:3,pages:150,status:'pendiente',note:'Un funcionario se topa con un doble idéntico a él; paranoia narrada desde dentro.'},
-{id:'b317',title:'El idiota',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:3,difficulty:4,pages:650,status:'pendiente',note:'Un hombre demasiado bueno para el mundo en el que vive; tan extenso como el resto de Dostoievski.'},
-{id:'b318',title:'Carta al padre',author:'Franz Kafka',country:'Chequia',continent:'Europa',era:'Moderna',category:'Memoria',priority:2,difficulty:2,pages:80,status:'pendiente',note:'Una carta que Kafka nunca llegó a enviar; la clave biográfica de buena parte de su obra.'},
-{id:'b319',title:'América',author:'Franz Kafka',country:'Chequia',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'Inacabada, como El proceso y El castillo: un joven inmigrante perdido en un país que no entiende.'},
-{id:'b320',title:'Las tiendas de color canela',author:'Bruno Schulz',country:'Polonia',continent:'Europa',era:'Moderna',category:'Cuento',priority:3,difficulty:3,pages:200,status:'pendiente',note:'Una infancia transfigurada en mito personal; imaginería muy densa.'},
-{id:'b321',title:'Ferdydurke',author:'Witold Gombrowicz',country:'Polonia',continent:'Europa',era:'Moderna',category:'Novela',priority:4,difficulty:4,pages:300,status:'pendiente',note:'Sátira absurdista sobre la inmadurez impuesta; tan rara como influyente.'},
-{id:'b322',title:'Siddhartha',author:'Hermann Hesse',country:'Alemania',continent:'Europa',era:'Moderna',category:'Novela',priority:1,difficulty:2
+{id:'b317',title:'El idiota',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:3,difficulty:4,pages:650,status:'pendiente',note:'Un hombre demasiado bueno para el mundo en el que vive; tan extenso como el resto de Dostoi

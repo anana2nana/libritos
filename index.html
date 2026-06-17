@@ -317,6 +317,7 @@ const FB_VER = '12.14.0';
 const appMod = await atlasLoadModule('https://www.gstatic.com/firebasejs/'+FB_VER+'/firebase-app.js', 15000);
 const authMod = await atlasLoadModule('https://www.gstatic.com/firebasejs/'+FB_VER+'/firebase-auth.js', 15000);
 const fsMod = await atlasLoadModule('https://www.gstatic.com/firebasejs/'+FB_VER+'/firebase-firestore.js', 20000);
+atlasShowFatal('[chk 1] módulos Firebase cargados.');
 
 const { initializeApp } = appMod;
 const { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } = authMod;
@@ -336,16 +337,21 @@ const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
 const googleProvider = new GoogleAuthProvider();
 const db = initializeFirestore(fbApp, { localCache: persistentLocalCache() });
+atlasShowFatal('[chk 2] firebase inicializado (app/auth/firestore).');
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('/sw.js').catch(function(err){
-      console.warn('No se pudo registrar el Service Worker:', err);
+    navigator.serviceWorker.register('/sw.js').then(function(){
+      atlasShowFatal('[chk 3b] Service Worker registrado OK.');
+    }).catch(function(err){
+      atlasShowFatal('[chk 3b] Service Worker FALLÓ al registrar: ' + err);
     });
   });
 }
+atlasShowFatal('[chk 3] bloque de Service Worker programado (no bloqueante).');
 
 (function(){
+atlasShowFatal('[chk 4] arrancando bloque principal de la app.');
 
 /* ===================== datos ===================== */
 
@@ -671,6 +677,4 @@ const seedBooks = [
 {id:'b311',title:'Bajo el volcán',author:'Malcolm Lowry',country:'México/Reino Unido',continent:'América',era:'Moderna',category:'Novela',priority:3,difficulty:4,pages:450,status:'pendiente',note:'Un día de borrachera y autodestrucción en México, con una prosa torrencial.'},
 {id:'b312',title:'La broma',author:'Milan Kundera',country:'Chequia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:3,pages:350,status:'pendiente',note:'Una broma de juventud que arruina una vida entera bajo el comunismo checo.'},
 {id:'b313',title:'El libro de la risa y el olvido',author:'Milan Kundera',country:'Chequia/Francia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:2,difficulty:3,pages:250,status:'pendiente',note:'Variaciones sobre la memoria y el poder, a medio camino entre el ensayo y la novela.'},
-{id:'b314',title:'Los hermanos Karamázov',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:4,pages:950,status:'pendiente',note:'La cumbre de Dostoievski: fe, duda y parricidio discutidos dentro de una sola familia.'},
-{id:'b315',title:'Memorias del subsuelo',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:3,pages:150,status:'pendiente',note:'El monólogo resentido que anticipa el existencialismo medio siglo antes de que se llamara así.'},
-{id:'b316',title:'El doble',a
+{id:'b314',title:'Los hermanos Karamázov',author:'Fiódor Dostoievski',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:4,pages:950,status:'pendiente',note:'La cumbre de Dostoievski: fe, duda y parricid

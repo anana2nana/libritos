@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1B2A3D">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Atlas">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -1200,17 +1201,21 @@ function showGate(){
   document.getElementById('app').style.display = 'none';
 }
 
-getRedirectResult(auth).catch(err=>{
-  console.error('Error en el inicio de sesión:', err);
+getRedirectResult(auth).then(result=>{
+  console.log('[ATLAS-DEBUG] getRedirectResult ->', result);
+}).catch(err=>{
+  console.error('[ATLAS-DEBUG] getRedirectResult ERROR ->', err.code, err.message);
   const el = document.getElementById('auth-error');
   if(el) el.textContent = 'No se pudo iniciar sesión. Inténtalo de nuevo.';
 });
 
 document.getElementById('google-login-btn').addEventListener('click', ()=>{
+  console.log('[ATLAS-DEBUG] click login, lanzando signInWithRedirect');
   signInWithRedirect(auth, googleProvider);
 });
 
 onAuthStateChanged(auth, user=>{
+  console.log('[ATLAS-DEBUG] onAuthStateChanged ->', user ? ('UID: '+user.uid) : 'sin usuario (null)');
   if(user){ showApp(); initApp(user.uid); }
   else{ showGate(); }
 });

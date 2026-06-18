@@ -122,7 +122,7 @@ body{
 .bar-count{flex:0 0 22px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--parchment);}
 
 /* ---------- controls (parchment zone) ---------- */
-.controls{
+.controls-primary{
   background:var(--parchment);
   border-radius:14px;
   padding:16px 16px 14px;
@@ -132,8 +132,7 @@ body{
   gap:9px;
   align-items:center;
 }
-.controls input[type=text],
-.controls select{
+.controls-primary input[type=text]{
   border:1px solid var(--parchment-line);
   background:#fff;
   border-radius:7px;
@@ -141,10 +140,30 @@ body{
   font-family:'Inter',sans-serif;
   font-size:.82rem;
   color:var(--ink-text);
+  flex:1 1 180px;min-width:140px;
 }
-.controls input[type=text]{flex:1 1 180px;min-width:140px;}
 #search-input::placeholder{color:#A39C89;}
-.controls .grow-gap{flex:1 1 100%;height:0;}
+.controls-primary .grow-gap{flex:1 1 auto;height:0;}
+.btn-filters-toggle{
+  border:1px solid var(--parchment-line);background:#fff;color:var(--ink-text);
+  border-radius:7px;padding:7px 13px;font-size:.82rem;font-family:'Inter',sans-serif;cursor:pointer;
+  display:flex;align-items:center;gap:6px;
+}
+.btn-filters-toggle:hover{border-color:var(--teal);}
+.btn-filters-toggle.has-filters{border-color:var(--terracotta);color:var(--terracotta);}
+.filters-badge{font-family:'IBM Plex Mono',monospace;font-size:.68rem;background:var(--terracotta);color:#fff;border-radius:9px;padding:1px 6px;display:none;}
+.filters-badge.show{display:inline;}
+.filters-panel{
+  background:var(--parchment);border-radius:14px;padding:0 16px;margin-top:0;
+  display:flex;flex-wrap:wrap;gap:9px;align-items:center;
+  max-height:0;overflow:hidden;opacity:0;transition:max-height .18s ease, opacity .15s ease, padding .18s ease, margin .18s ease;
+}
+.filters-panel.open{max-height:300px;opacity:1;padding:14px 16px;margin-top:6px;overflow:visible;}
+.filters-panel select{
+  border:1px solid var(--parchment-line);background:#fff;border-radius:7px;padding:7px 10px;
+  font-family:'Inter',sans-serif;font-size:.82rem;color:var(--ink-text);
+}
+.btn-clear-filters{background:none;border:none;color:var(--terracotta);font-size:.76rem;text-decoration:underline;cursor:pointer;padding:0;margin-left:4px;}
 .view-toggle{display:flex;border:1px solid var(--parchment-line);border-radius:7px;overflow:hidden;}
 .view-toggle button{
   border:none;background:#fff;color:var(--ink-text);
@@ -156,7 +175,7 @@ body{
   padding:8px 14px;font-size:.82rem;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;
 }
 .btn-add:hover{filter:brightness(1.08);}
-.controls-footer{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:2px;}
+.controls-footer{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:8px;}
 .result-count{font-size:.74rem;color:var(--muted);}
 .btn-reset{background:none;border:none;color:var(--muted);font-size:.72rem;text-decoration:underline;cursor:pointer;padding:0;}
 
@@ -200,30 +219,6 @@ td.note-cell .field-text:focus{max-width:320px;white-space:normal;overflow:visib
 .country-chip.active .chip-count{color:#fff;}
 .country-chip:hover{border-color:var(--terracotta);}
 
-.shelf-wrap{background:linear-gradient(180deg,#E8DFC8 0%,#E8DFC8 92%,#C9A86B 92%,#C9A86B 100%);border-radius:8px;padding:18px 14px 0 14px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.08);}
-.shelf-row{display:flex;align-items:flex-end;gap:4px;flex-wrap:wrap;padding-bottom:18px;}
-.book-spine{
-  border:none;border-radius:3px 3px 0 0;cursor:pointer;position:relative;
-  display:flex;align-items:flex-end;justify-content:center;padding:8px 0;
-  box-shadow:inset -3px 0 6px rgba(0,0,0,.18),inset 2px 0 4px rgba(255,255,255,.12);
-  flex-shrink:0;
-}
-.book-spine:hover{filter:brightness(1.12);transform:translateY(-3px);transition:transform .12s, filter .12s;}
-.spine-title{
-  writing-mode:vertical-rl;text-orientation:mixed;color:#fff;font-size:.68rem;
-  font-weight:600;max-height:88%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  text-shadow:0 1px 2px rgba(0,0,0,.25);letter-spacing:.2px;
-}
-.spine-badge{position:absolute;top:5px;left:50%;transform:translateX(-50%);font-size:.7rem;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4);}
-.spine-badge-read{color:var(--gold);}
-.spine-badge-reading{color:#fff;}
-
-.shelf-detail-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:500;}
-.shelf-detail-overlay.open{display:flex;}
-.shelf-detail-backdrop{position:absolute;inset:0;background:rgba(40,34,24,.55);}
-.shelf-detail-panel{position:relative;background:var(--parchment);max-width:480px;width:90%;max-height:85vh;overflow:auto;border-radius:10px;padding:22px;box-shadow:0 12px 40px rgba(0,0,0,.35);}
-.shelf-detail-close{position:absolute;top:10px;right:12px;border:none;background:none;font-size:1.3rem;color:#7a7363;cursor:pointer;line-height:1;}
-.shelf-detail-close:hover{color:var(--terracotta);}
 .btn-delete{
   border:none;background:none;color:#B9573A;font-size:1rem;cursor:pointer;padding:0 4px;line-height:1;
 }
@@ -252,8 +247,10 @@ td.note-cell .field-text:focus{max-width:320px;white-space:normal;overflow:visib
 @media (max-width:760px){
   .stats-row{grid-template-columns:repeat(2,1fr);}
   .mini-charts{grid-template-columns:1fr 1fr;}
-  .controls{flex-direction:column;align-items:stretch;}
-  .controls select,.controls input[type=text]{flex:1 1 auto;width:100%;}
+  .controls-primary{flex-direction:column;align-items:stretch;}
+  .controls-primary input[type=text]{width:100%;}
+  .filters-panel{flex-direction:column;align-items:stretch;}
+  .filters-panel select{width:100%;}
 }
 
 /* ---------- auth gate ---------- */
@@ -1055,6 +1052,7 @@ const seedBooks = [
 let state = {
   books: [],
   view: 'table',
+  filtersPanelOpen: false,
   filters:{search:'',continent:'todas',country:'todas',category:'todas',era:'todas',status:'todas',priority:'todas',difficulty:'todas',length:'todas'},
   sort:'priority-asc'
 };
@@ -1295,6 +1293,14 @@ function renderControlsState(){
   document.querySelectorAll('.view-toggle button').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.view===state.view);
   });
+  document.getElementById('filters-panel').classList.toggle('open', state.filtersPanelOpen);
+  const f = state.filters;
+  const activeCount = ['category','era','status','priority','difficulty','length'].filter(k=>f[k]!=='todas').length;
+  const badge = document.getElementById('filters-badge');
+  const toggleBtn = document.getElementById('btn-filters-toggle');
+  badge.textContent = activeCount || '';
+  badge.classList.toggle('show', activeCount>0);
+  toggleBtn.classList.toggle('has-filters', activeCount>0);
 }
 
 /* ===================== render: lista (tabla / tarjetas) ===================== */
@@ -1363,57 +1369,10 @@ function renderCards(list){
   return `<div class="cards-grid">${cards}</div>`;
 }
 
-function spineHeight(b){
-  return 168 + (hashStr(b.id) % 55);
-}
-function spineWidth(b){
-  return Math.max(22, Math.min(58, 22 + (Number(b.pages)||200)/22));
-}
-function renderShelf(list){
-  if(list.length===0) return `<div class="empty-state">No hay libros que coincidan con estos filtros.</div>`;
-  const spines = list.map(b=>{
-    const color = CONTINENT_COLOR[b.continent] || '#8C8576';
-    const h = spineHeight(b);
-    const w = spineWidth(b);
-    const badge = b.status==='leído' ? '<span class="spine-badge spine-badge-read">★</span>'
-      : b.status==='leyendo' ? '<span class="spine-badge spine-badge-reading">●</span>' : '';
-    return `<button class="book-spine" data-id="${b.id}" style="height:${h}px;width:${w}px;background:${color};" title="${esc(b.title)} — ${esc(b.author)}">
-        ${badge}
-        <span class="spine-title">${esc(b.title)}</span>
-      </button>`;
-  }).join('');
-  return `<div class="shelf-wrap"><div class="shelf-row">${spines}</div></div>`;
-}
-
-let openDetailId = null;
-function openShelfDetail(id){
-  const b = state.books.find(x=>x.id===id);
-  if(!b) return;
-  openDetailId = id;
-  const detail = document.getElementById('shelf-detail-content');
-  detail.innerHTML = `
-    <div class="card-title" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div>
-    <div class="card-author" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)} — <span contenteditable="true" data-id="${b.id}" data-field="country" style="display:inline">${esc(b.country)}</span></div>
-    <div class="card-meta-row">${categoryOption(b)}${continentOption(b)}${eraOption(b)}</div>
-    <div class="card-meta-row">${priorityOption(b)}${difficultyOption(b)}${pagesInput(b)}${statusOption(b)}</div>
-    <div class="card-meta-row">${starsHtml(b)}</div>
-    <div class="card-note" contenteditable="true" data-id="${b.id}" data-field="note">${esc(b.note)}</div>
-    <div class="card-footer"><button class="btn-delete" data-id="${b.id}" title="Eliminar">× eliminar</button></div>
-  `;
-  document.getElementById('shelf-detail-overlay').classList.add('open');
-}
-function closeShelfDetail(){
-  openDetailId = null;
-  document.getElementById('shelf-detail-overlay').classList.remove('open');
-}
-function refreshShelfDetailIfOpen(id){
-  if(openDetailId===id) openShelfDetail(id);
-}
-
 function renderList(){
   const list = getFiltered();
   document.getElementById('result-count').textContent = `${list.length} de ${state.books.length} libros`;
-  const html = state.view==='table' ? renderTable(list) : state.view==='shelf' ? renderShelf(list) : renderCards(list);
+  const html = state.view==='table' ? renderTable(list) : renderCards(list);
   document.getElementById('list-container').innerHTML = html;
 }
 
@@ -1442,7 +1401,6 @@ function deleteBook(id){
   if(!confirm(`¿Eliminar «${b.title}» de tu atlas?`)) return;
   state.books = state.books.filter(x=>x.id!==id);
   saveBooks();
-  if(openDetailId===id) closeShelfDetail();
   renderAll();
 }
 function resetLibrary(){
@@ -1494,6 +1452,16 @@ function setupEvents(){
     if(resetBtn){ resetLibrary(); return; }
     const viewBtn = e.target.closest('.view-toggle button');
     if(viewBtn){ state.view = viewBtn.dataset.view; renderControlsState(); renderList(); return; }
+    const filtersToggle = e.target.closest('#btn-filters-toggle');
+    if(filtersToggle){ state.filtersPanelOpen = !state.filtersPanelOpen; renderControlsState(); return; }
+    const clearFilters = e.target.closest('#btn-clear-filters');
+    if(clearFilters){
+      state.filters.category='todas'; state.filters.era='todas'; state.filters.status='todas';
+      state.filters.priority='todas'; state.filters.difficulty='todas'; state.filters.length='todas';
+      renderControlsState();
+      renderList();
+      return;
+    }
     const contTab = e.target.closest('.continent-tab');
     if(contTab){
       state.filters.continent = contTab.dataset.continent;
@@ -1509,9 +1477,6 @@ function setupEvents(){
       renderList();
       return;
     }
-    const spine = e.target.closest('.book-spine');
-    if(spine){ openShelfDetail(spine.dataset.id); return; }
-    if(e.target.id==='shelf-detail-close' || e.target.id==='shelf-detail-backdrop'){ closeShelfDetail(); return; }
     const star = e.target.closest('.star');
     if(star){
       const id = star.dataset.id;
@@ -1520,7 +1485,6 @@ function setupEvents(){
       const newVal = (b && Number(b.rating)===value) ? 0 : value;
       updateBook(id, 'rating', newVal);
       renderList();
-      refreshShelfDetailIfOpen(id);
       return;
     }
   });
@@ -1588,8 +1552,18 @@ function buildShell(){
     <div class="panel-label">Explorar y editar</div>
     <div class="continent-tabs" id="continent-tabs"></div>
     <div class="country-chips" id="country-chips"></div>
-    <div class="controls">
+    <div class="controls-primary">
       <input type="text" id="search-input" placeholder="Buscar título, autor o país…">
+      <button class="btn-filters-toggle" id="btn-filters-toggle">Filtros <span class="filters-badge" id="filters-badge"></span></button>
+      <div class="grow-gap"></div>
+      <div class="view-toggle">
+        <button data-view="table" class="active">Tabla</button>
+        <button data-view="cards">Tarjetas</button>
+      </div>
+      <button class="btn-add">+ Añadir libro</button>
+    </div>
+
+    <div class="filters-panel" id="filters-panel">
       <select id="filter-category" data-filter="category"><option value="todas">Todas las categorías</option>${optionList(CATEGORIES,'todas')}</select>
       <select id="filter-era" data-filter="era"><option value="todas">Todas las épocas</option>${optionList(ERAS,'todas')}</select>
       <select id="filter-status" data-filter="status"><option value="todas">Cualquier estado</option>${optionList(STATUSES,'todas')}</select>
@@ -1617,28 +1591,15 @@ function buildShell(){
         <option value="pages-asc">Ordenar: páginas — menos primero</option>
         <option value="pages-desc">Ordenar: páginas — más primero</option>
       </select>
-      <div class="grow-gap"></div>
-      <div class="view-toggle">
-        <button data-view="table" class="active">Tabla</button>
-        <button data-view="cards">Tarjetas</button>
-        <button data-view="shelf">Estantería</button>
-      </div>
-      <button class="btn-add">+ Añadir libro</button>
-      <div class="controls-footer">
-        <span class="result-count" id="result-count"></span>
-        <button class="btn-reset" id="btn-reset-label">Restablecer los libros originales</button>
-      </div>
+      <button class="btn-clear-filters" id="btn-clear-filters">Limpiar filtros</button>
+    </div>
+
+    <div class="controls-footer">
+      <span class="result-count" id="result-count"></span>
+      <button class="btn-reset" id="btn-reset-label">Restablecer los libros originales</button>
     </div>
 
     <div id="list-container"></div>
-
-    <div class="shelf-detail-overlay" id="shelf-detail-overlay">
-      <div class="shelf-detail-backdrop" id="shelf-detail-backdrop"></div>
-      <div class="shelf-detail-panel">
-        <button class="shelf-detail-close" id="shelf-detail-close" title="Cerrar">×</button>
-        <div id="shelf-detail-content"></div>
-      </div>
-    </div>
 
     <div class="footer-note">Tus cambios se guardan automáticamente y siguen aquí la próxima vez que abras este atlas.</div>
   `;

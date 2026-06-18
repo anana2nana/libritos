@@ -219,6 +219,38 @@ td.note-cell .field-text:focus{max-width:320px;white-space:normal;overflow:visib
 .country-chip.active .chip-count{color:#fff;}
 .country-chip:hover{border-color:var(--terracotta);}
 
+.page-tabs{display:flex;gap:8px;margin:22px 0 18px;}
+.page-tab{
+  border:none;background:none;color:rgba(244,239,225,.55);font-family:'Inter',sans-serif;
+  font-size:1rem;font-weight:600;padding:6px 4px 10px;cursor:pointer;border-bottom:2px solid transparent;
+}
+.page-tab.active{color:var(--parchment);border-bottom-color:var(--terracotta);}
+.page-tab:hover{color:var(--parchment);}
+
+.chart-hint{font-size:.74rem;color:rgba(244,239,225,.5);text-align:center;margin-top:6px;font-style:italic;}
+
+.chip-filter-group{display:flex;gap:5px;flex-wrap:wrap;}
+.filter-chip{
+  border:1px solid var(--parchment-line);background:#fff;color:var(--ink-text);
+  border-radius:14px;padding:5px 11px;font-size:.76rem;cursor:pointer;
+  display:flex;align-items:center;gap:5px;
+}
+.filter-chip .chip-count{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:#9b9384;}
+.filter-chip.active{background:var(--teal);color:#fff;border-color:var(--teal);}
+.filter-chip.active .chip-count{color:#fff;}
+.filter-chip:hover{border-color:var(--teal);}
+
+.gaps-panel{margin-bottom:8px;}
+.gaps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;}
+.gap-item{
+  text-align:left;background:var(--parchment);border:none;border-left:4px solid #999;border-radius:8px;
+  padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:3px;
+}
+.gap-item:hover{filter:brightness(0.97);}
+.gap-country{font-weight:600;color:var(--ink-text);font-size:.86rem;}
+.gap-count{font-size:.72rem;color:var(--muted);}
+.gaps-empty{color:rgba(244,239,225,.6);font-size:.85rem;font-style:italic;padding:8px 0;}
+
 .btn-delete{
   border:none;background:none;color:#B9573A;font-size:1rem;cursor:pointer;padding:0 4px;line-height:1;
 }
@@ -1052,6 +1084,7 @@ const seedBooks = [
 let state = {
   books: [],
   view: 'table',
+  page: 'explorar',
   filtersPanelOpen: false,
   filters:{search:'',continent:'todas',country:'todas',category:'todas',era:'todas',status:'todas',priority:'todas',difficulty:'todas',length:'todas'},
   sort:'priority-asc'
@@ -1280,12 +1313,54 @@ function renderCountryChips(){
   el.innerHTML = chips.join('');
 }
 
+function renderChipFilter(containerId, allValues, filterKey, allLabel){
+  const el = document.getElementById(containerId);
+  const counts = {};
+  state.books.forEach(b=>{ counts[b[filterKey]] = (counts[b[filterKey]]||0)+1; });
+  const current = state.filters[filterKey];
+  const chips = [`<button class="filter-chip${current==='todas'?' active':''}" data-chipfilter="${filterKey}" data-value="todas">${allLabel} <span class="chip-count">${state.books.length}</span></button>`]
+    .concat(allValues.map(v=>`<button class="filter-chip${current===v?' active':''}" data-chipfilter="${filterKey}" data-value="${esc(v)}">${esc(v)} <span class="chip-count">${counts[v]||0}</span></button>`));
+  el.innerHTML = chips.join('');
+}
+
+function renderPageVisibility(){
+  document.getElementById('page-estadisticas').style.display = state.page==='estadisticas' ? '' : 'none';
+  document.getElementById('page-explorar').style.display = state.page==='explorar' ? '' : 'none';
+  document.querySelectorAll('.page-tab').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.page===state.page);
+  });
+}
+
+function renderGapsPanel(){
+  const el = document.getElementById('gaps-panel');
+  const byCountry = {};
+  state.books.forEach(b=>{
+    const c = b.country || '(sin país)';
+    if(!byCountry[c]) byCountry[c] = {total:0, leidos:0, continent:b.continent};
+    byCountry[c].total++;
+    if(b.status==='leído') byCountry[c].leidos++;
+  });
+  const gaps = Object.entries(byCountry)
+    .filter(([c,v])=>v.leidos===0)
+    .sort((a,b)=>b[1].total-a[1].total || a[0].localeCompare(b[0]));
+  if(gaps.length===0){
+    el.innerHTML = `<div class="gaps-empty">¡Sin huecos! Tienes al menos un libro leído de cada país de tu atlas.</div>`;
+    return;
+  }
+  const items = gaps.map(([c,v])=>`
+    <button class="gap-item" data-country="${esc(c)}" data-continent="${esc(v.continent)}" style="border-left-color:${CONTINENT_COLOR[v.continent]||'#999'}">
+      <span class="gap-country">${esc(c)}</span>
+      <span class="gap-count">${v.total} libro${v.total===1?'':'s'} sin leer ninguno</span>
+    </button>`).join('');
+  el.innerHTML = `<div class="gaps-grid">${items}</div>`;
+}
+
 function renderControlsState(){
   renderContinentTabs();
   renderCountryChips();
-  document.getElementById('filter-category').value = state.filters.category;
-  document.getElementById('filter-era').value = state.filters.era;
-  document.getElementById('filter-status').value = state.filters.status;
+  renderChipFilter('chip-filter-category', CATEGORIES, 'category', 'Todas las categorías');
+  renderChipFilter('chip-filter-era', ERAS, 'era', 'Todas las épocas');
+  renderChipFilter('chip-filter-status', STATUSES, 'status', 'Cualquier estado');
   document.getElementById('filter-priority').value = state.filters.priority;
   document.getElementById('filter-difficulty').value = state.filters.difficulty;
   document.getElementById('filter-length').value = state.filters.length;
@@ -1301,6 +1376,8 @@ function renderControlsState(){
   badge.textContent = activeCount || '';
   badge.classList.toggle('show', activeCount>0);
   toggleBtn.classList.toggle('has-filters', activeCount>0);
+  renderPageVisibility();
+  renderGapsPanel();
 }
 
 /* ===================== render: lista (tabla / tarjetas) ===================== */
@@ -1442,6 +1519,21 @@ function setupEvents(){
   const app = document.getElementById('app');
 
   app.addEventListener('click', e=>{
+    if(e.target.tagName==='circle' && e.target.closest('#chart-svg-wrap')){
+      const id = e.target.getAttribute('data-id');
+      const b = state.books.find(x=>x.id===id);
+      if(b){
+        state.filters.priority = String(b.priority);
+        state.filters.difficulty = String(b.difficulty);
+        state.filtersPanelOpen = true;
+        state.page = 'explorar';
+        renderPageVisibility();
+        renderControlsState();
+        renderList();
+        document.getElementById('list-container').scrollIntoView({behavior:'smooth', block:'start'});
+      }
+      return;
+    }
     const del = e.target.closest('.btn-delete');
     if(del){ deleteBook(del.dataset.id); return; }
     const addBtn = e.target.closest('.btn-add');
@@ -1458,6 +1550,29 @@ function setupEvents(){
     if(clearFilters){
       state.filters.category='todas'; state.filters.era='todas'; state.filters.status='todas';
       state.filters.priority='todas'; state.filters.difficulty='todas'; state.filters.length='todas';
+      renderControlsState();
+      renderList();
+      return;
+    }
+    const chipFilter = e.target.closest('.filter-chip');
+    if(chipFilter){
+      state.filters[chipFilter.dataset.chipfilter] = chipFilter.dataset.value;
+      renderControlsState();
+      renderList();
+      return;
+    }
+    const pageTab = e.target.closest('.page-tab');
+    if(pageTab){
+      state.page = pageTab.dataset.page;
+      renderPageVisibility();
+      return;
+    }
+    const gapItem = e.target.closest('.gap-item');
+    if(gapItem){
+      state.filters.continent = gapItem.dataset.continent;
+      state.filters.country = gapItem.dataset.country;
+      state.page = 'explorar';
+      renderPageVisibility();
       renderControlsState();
       renderList();
       return;
@@ -1533,73 +1648,87 @@ function buildShell(){
         <button class="btn-signout" id="btn-signout">cerrar sesión</button>
       </div>
     </div>
-    <div id="stats-row" class="stats-row"></div>
 
-    <div class="panel-label">Carta estelar · prioridad vs. dificultad</div>
-    <div class="chart-panel" id="chart-panel">
-      <div id="chart-svg-wrap"></div>
-      <div class="chart-legend" id="chart-legend"></div>
-      <div class="chart-tooltip" id="chart-tooltip"></div>
+    <div class="page-tabs" id="page-tabs">
+      <button class="page-tab" data-page="explorar">Explorar</button>
+      <button class="page-tab" data-page="estadisticas">Estadísticas</button>
     </div>
 
-    <div class="mini-charts">
-      <div class="mini-card" id="mini-status"></div>
-      <div class="mini-card" id="mini-continent"></div>
-      <div class="mini-card" id="mini-difficulty"></div>
-      <div class="mini-card" id="mini-priority"></div>
-    </div>
+    <div id="page-estadisticas">
+      <div id="stats-row" class="stats-row"></div>
 
-    <div class="panel-label">Explorar y editar</div>
-    <div class="continent-tabs" id="continent-tabs"></div>
-    <div class="country-chips" id="country-chips"></div>
-    <div class="controls-primary">
-      <input type="text" id="search-input" placeholder="Buscar título, autor o país…">
-      <button class="btn-filters-toggle" id="btn-filters-toggle">Filtros <span class="filters-badge" id="filters-badge"></span></button>
-      <div class="grow-gap"></div>
-      <div class="view-toggle">
-        <button data-view="table" class="active">Tabla</button>
-        <button data-view="cards">Tarjetas</button>
+      <div class="panel-label">Carta estelar · prioridad vs. dificultad</div>
+      <div class="chart-panel" id="chart-panel">
+        <div id="chart-svg-wrap"></div>
+        <div class="chart-legend" id="chart-legend"></div>
+        <div class="chart-tooltip" id="chart-tooltip"></div>
       </div>
-      <button class="btn-add">+ Añadir libro</button>
+      <div class="chart-hint">Toca un punto del gráfico para filtrar el listado de Explorar por esa prioridad y dificultad.</div>
+
+      <div class="mini-charts">
+        <div class="mini-card" id="mini-status"></div>
+        <div class="mini-card" id="mini-continent"></div>
+        <div class="mini-card" id="mini-difficulty"></div>
+        <div class="mini-card" id="mini-priority"></div>
+      </div>
+
+      <div class="panel-label">Huecos en el atlas · países sin ningún libro leído</div>
+      <div id="gaps-panel" class="gaps-panel"></div>
     </div>
 
-    <div class="filters-panel" id="filters-panel">
-      <select id="filter-category" data-filter="category"><option value="todas">Todas las categorías</option>${optionList(CATEGORIES,'todas')}</select>
-      <select id="filter-era" data-filter="era"><option value="todas">Todas las épocas</option>${optionList(ERAS,'todas')}</select>
-      <select id="filter-status" data-filter="status"><option value="todas">Cualquier estado</option>${optionList(STATUSES,'todas')}</select>
-      <select id="filter-priority" data-filter="priority">
-        <option value="todas">Cualquier prioridad</option>
-        ${[1,2,3,4,5].map(n=>`<option value="${n}">Prioridad ${n}</option>`).join('')}
-      </select>
-      <select id="filter-difficulty" data-filter="difficulty">
-        <option value="todas">Cualquier dificultad</option>
-        ${[1,2,3,4,5].map(n=>`<option value="${n}">Dificultad ${n}</option>`).join('')}
-      </select>
-      <select id="filter-length" data-filter="length">
-        <option value="todas">Cualquier extensión</option>
-        <option value="corta">Corta (&lt;250p)</option>
-        <option value="media">Media (250–500p)</option>
-        <option value="larga">Larga (&gt;500p)</option>
-      </select>
-      <select id="sort-select">
-        <option value="priority-asc">Ordenar: prioridad — universal primero</option>
-        <option value="priority-desc">Ordenar: prioridad — nicho primero</option>
-        <option value="difficulty-asc">Ordenar: dificultad — fácil primero</option>
-        <option value="difficulty-desc">Ordenar: dificultad — difícil primero</option>
-        <option value="title-asc">Ordenar: título A–Z</option>
-        <option value="country-asc">Ordenar: país A–Z</option>
-        <option value="pages-asc">Ordenar: páginas — menos primero</option>
-        <option value="pages-desc">Ordenar: páginas — más primero</option>
-      </select>
-      <button class="btn-clear-filters" id="btn-clear-filters">Limpiar filtros</button>
-    </div>
+    <div id="page-explorar">
+      <div class="panel-label">Explorar y editar</div>
+      <div class="continent-tabs" id="continent-tabs"></div>
+      <div class="country-chips" id="country-chips"></div>
+      <div class="controls-primary">
+        <input type="text" id="search-input" placeholder="Buscar título, autor o país…">
+        <button class="btn-filters-toggle" id="btn-filters-toggle">Filtros <span class="filters-badge" id="filters-badge"></span></button>
+        <div class="grow-gap"></div>
+        <div class="view-toggle">
+          <button data-view="table" class="active">Tabla</button>
+          <button data-view="cards">Tarjetas</button>
+        </div>
+        <button class="btn-add">+ Añadir libro</button>
+      </div>
 
-    <div class="controls-footer">
-      <span class="result-count" id="result-count"></span>
-      <button class="btn-reset" id="btn-reset-label">Restablecer los libros originales</button>
-    </div>
+      <div class="filters-panel" id="filters-panel">
+        <div class="chip-filter-group" id="chip-filter-category"></div>
+        <div class="chip-filter-group" id="chip-filter-era"></div>
+        <div class="chip-filter-group" id="chip-filter-status"></div>
+        <select id="filter-priority" data-filter="priority">
+          <option value="todas">Cualquier prioridad</option>
+          ${[1,2,3,4,5].map(n=>`<option value="${n}">Prioridad ${n}</option>`).join('')}
+        </select>
+        <select id="filter-difficulty" data-filter="difficulty">
+          <option value="todas">Cualquier dificultad</option>
+          ${[1,2,3,4,5].map(n=>`<option value="${n}">Dificultad ${n}</option>`).join('')}
+        </select>
+        <select id="filter-length" data-filter="length">
+          <option value="todas">Cualquier extensión</option>
+          <option value="corta">Corta (&lt;250p)</option>
+          <option value="media">Media (250–500p)</option>
+          <option value="larga">Larga (&gt;500p)</option>
+        </select>
+        <select id="sort-select">
+          <option value="priority-asc">Ordenar: prioridad — universal primero</option>
+          <option value="priority-desc">Ordenar: prioridad — nicho primero</option>
+          <option value="difficulty-asc">Ordenar: dificultad — fácil primero</option>
+          <option value="difficulty-desc">Ordenar: dificultad — difícil primero</option>
+          <option value="title-asc">Ordenar: título A–Z</option>
+          <option value="country-asc">Ordenar: país A–Z</option>
+          <option value="pages-asc">Ordenar: páginas — menos primero</option>
+          <option value="pages-desc">Ordenar: páginas — más primero</option>
+        </select>
+        <button class="btn-clear-filters" id="btn-clear-filters">Limpiar filtros</button>
+      </div>
 
-    <div id="list-container"></div>
+      <div class="controls-footer">
+        <span class="result-count" id="result-count"></span>
+        <button class="btn-reset" id="btn-reset-label">Restablecer los libros originales</button>
+      </div>
+
+      <div id="list-container"></div>
+    </div>
 
     <div class="footer-note">Tus cambios se guardan automáticamente y siguen aquí la próxima vez que abras este atlas.</div>
   `;

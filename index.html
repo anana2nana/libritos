@@ -78,33 +78,20 @@ body{
   color:var(--muted-light);
   margin:26px 2px 8px;
 }
-.chart-panel{
+.treemap-panel{
   background:var(--ink-deep);
   border:1px solid rgba(255,255,255,.06);
   border-radius:14px;
-  padding:14px 10px 6px;
+  padding:14px;
   position:relative;
 }
-.chart-panel svg{width:100%;height:auto;display:block;}
-.chart-tooltip{
-  position:absolute;
-  display:none;
-  background:var(--parchment);
-  color:var(--ink-text);
-  padding:7px 11px;
-  border-radius:7px;
-  font-size:.74rem;
-  line-height:1.4;
-  pointer-events:none;
-  box-shadow:0 6px 18px rgba(0,0,0,.35);
-  transform:translate(-50%,-100%);
-  white-space:nowrap;
-  z-index:30;
-}
-.chart-tooltip b{font-family:'Fraunces',serif;font-weight:600;}
-.chart-legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;padding:8px 4px 4px;font-size:.72rem;color:var(--muted-light);}
-.chart-legend span{display:inline-flex;align-items:center;gap:6px;}
-.legend-dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+.treemap-panel svg{width:100%;height:auto;display:block;}
+.treemap-cell{cursor:pointer;}
+.treemap-cell rect{stroke:var(--ink-deep);stroke-width:2;transition:opacity .12s;}
+.treemap-cell:hover rect{opacity:.82;}
+.treemap-label{font-family:'Inter',sans-serif;fill:#fff;pointer-events:none;}
+.treemap-legend{display:flex;align-items:center;gap:10px;justify-content:center;padding:10px 4px 2px;font-size:.72rem;color:var(--muted-light);}
+.treemap-legend-bar{width:120px;height:8px;border-radius:4px;background:linear-gradient(90deg,#C1592A,#2F6F6F);}
 
 /* ---------- mini charts ---------- */
 .mini-charts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px;}
@@ -164,12 +151,6 @@ body{
   font-family:'Inter',sans-serif;font-size:.82rem;color:var(--ink-text);
 }
 .btn-clear-filters{background:none;border:none;color:var(--terracotta);font-size:.76rem;text-decoration:underline;cursor:pointer;padding:0;margin-left:4px;}
-.view-toggle{display:flex;border:1px solid var(--parchment-line);border-radius:7px;overflow:hidden;}
-.view-toggle button{
-  border:none;background:#fff;color:var(--ink-text);
-  font-family:'Inter',sans-serif;font-size:.8rem;padding:7px 13px;cursor:pointer;
-}
-.view-toggle button.active{background:var(--terracotta);color:#fff;}
 .btn-add{
   background:var(--terracotta);color:#fff;border:none;border-radius:7px;
   padding:8px 14px;font-size:.82rem;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;
@@ -179,21 +160,8 @@ body{
 .result-count{font-size:.74rem;color:var(--muted);}
 .btn-reset{background:none;border:none;color:var(--muted);font-size:.72rem;text-decoration:underline;cursor:pointer;padding:0;}
 
-/* ---------- table ---------- */
-.table-scroll{overflow-x:auto;margin-top:14px;border-radius:12px;}
-table{width:100%;border-collapse:collapse;background:var(--parchment);min-width:920px;}
-th{
-  text-align:left;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;
-  color:var(--muted);padding:10px 9px;border-bottom:1px solid var(--parchment-line);
-  font-family:'IBM Plex Mono',monospace;font-weight:500;white-space:nowrap;
-}
-td{padding:8px 9px;border-bottom:1px solid var(--parchment-line);vertical-align:top;font-size:.82rem;color:var(--ink-text);}
-tr:hover td{background:rgba(193,89,42,.05);}
 .field-text{outline:none;border-radius:4px;padding:2px 4px;}
 .field-text:focus{background:#fff;box-shadow:0 0 0 2px rgba(193,89,42,.35);}
-td.title-cell .field-text{font-weight:600;}
-td.note-cell .field-text{max-width:190px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-td.note-cell .field-text:focus{max-width:320px;white-space:normal;overflow:visible;position:relative;z-index:6;}
 .field-select,.field-number{
   border:1px solid var(--parchment-line);border-radius:5px;background:#fff;color:var(--ink-text);
   font-family:'Inter',sans-serif;font-size:.78rem;padding:4px 5px;width:100%;
@@ -227,7 +195,6 @@ td.note-cell .field-text:focus{max-width:320px;white-space:normal;overflow:visib
 .page-tab.active{color:var(--parchment);border-bottom-color:var(--terracotta);}
 .page-tab:hover{color:var(--parchment);}
 
-.chart-hint{font-size:.74rem;color:rgba(244,239,225,.5);text-align:center;margin-top:6px;font-style:italic;}
 
 .chip-filter-group{display:flex;gap:5px;flex-wrap:wrap;}
 .filter-chip{
@@ -1101,7 +1068,6 @@ const seedBooks = [
 /* ===================== estado ===================== */
 let state = {
   books: [],
-  view: 'table',
   page: 'explorar',
   filtersPanelOpen: false,
   filters:{search:'',continent:'todas',country:'todas',category:'todas',era:'todas',status:'todas',priority:'todas',difficulty:'todas',length:'todas'},
@@ -1234,50 +1200,67 @@ function renderStats(){
   `;
 }
 
-/* ===================== render: carta estelar ===================== */
-const PLOT = {x0:74,x1:716,y0:34,y1:240};
-function xFor(p){ return PLOT.x0 + (p-1)/4*(PLOT.x1-PLOT.x0); }
-function yFor(d){ return PLOT.y1 - (d-1)/4*(PLOT.y1-PLOT.y0); }
-
-function renderChart(){
-  const books = state.books;
-  const pagesArr = books.map(b=>Number(b.pages)||0);
-  const minP = Math.min(...pagesArr), maxP = Math.max(...pagesArr);
-  function rFor(p){
-    if(maxP===minP) return 6;
-    const t = Math.sqrt((p-minP)/(maxP-minP));
-    return 4 + 7*t;
+/* ===================== render: treemap por país ===================== */
+function lerpColor(c0, c1, t){
+  const a = parseInt(c0.slice(1),16), b = parseInt(c1.slice(1),16);
+  const ar=(a>>16)&255, ag=(a>>8)&255, ab=a&255;
+  const br=(b>>16)&255, bg=(b>>8)&255, bb=b&255;
+  const r = Math.round(ar+(br-ar)*t), g = Math.round(ag+(bg-ag)*t), bl = Math.round(ab+(bb-ab)*t);
+  return `rgb(${r},${g},${bl})`;
+}
+function treemapLayout(items, x, y, w, h){
+  if(items.length===0) return [];
+  if(items.length===1) return [Object.assign({}, items[0], {x,y,w,h})];
+  const total = items.reduce((s,i)=>s+i.value,0);
+  let acc=0, splitIdx=1, bestDiff=Infinity;
+  for(let k=1;k<items.length;k++){
+    acc += items[k-1].value;
+    const diff = Math.abs(acc-total/2);
+    if(diff<bestDiff){ bestDiff=diff; splitIdx=k; }
   }
-  let grid='';
-  for(let i=1;i<=5;i++){
-    grid += `<line x1="${xFor(i)}" y1="${PLOT.y0}" x2="${xFor(i)}" y2="${PLOT.y1}" stroke="rgba(255,255,255,.07)"/>`;
-    grid += `<line x1="${PLOT.x0}" y1="${yFor(i)}" x2="${PLOT.x1}" y2="${yFor(i)}" stroke="rgba(255,255,255,.07)"/>`;
-    grid += `<text x="${xFor(i)}" y="${PLOT.y1+16}" font-size="9" fill="rgba(244,239,225,.45)" text-anchor="middle" font-family="IBM Plex Mono">${i}</text>`;
-    grid += `<text x="${PLOT.x0-10}" y="${yFor(i)+3}" font-size="9" fill="rgba(244,239,225,.45)" text-anchor="end" font-family="IBM Plex Mono">${i}</text>`;
+  const groupA = items.slice(0,splitIdx), groupB = items.slice(splitIdx);
+  const sumA = groupA.reduce((s,i)=>s+i.value,0);
+  const fracA = sumA/total;
+  if(w>=h){
+    const wA = w*fracA;
+    return treemapLayout(groupA,x,y,wA,h).concat(treemapLayout(groupB,x+wA,y,w-wA,h));
+  }else{
+    const hA = h*fracA;
+    return treemapLayout(groupA,x,y,w,hA).concat(treemapLayout(groupB,x,y+hA,w,h-hA));
   }
-  let dots='';
-  books.forEach(b=>{
-    const h = hashStr(b.id+b.title);
-    const jx = (h%44)-22;
-    const jy = (Math.floor(h/44)%26)-13;
-    const cx = Math.min(PLOT.x1+8, Math.max(PLOT.x0-8, xFor(b.priority)+jx));
-    const cy = Math.min(PLOT.y1+8, Math.max(PLOT.y0-8, yFor(b.difficulty)+jy));
-    const color = CONTINENT_COLOR[b.continent] || '#999';
-    dots += `<circle data-id="${esc(b.id)}" cx="${cx}" cy="${cy}" r="${rFor(Number(b.pages)||0).toFixed(1)}" fill="${color}" fill-opacity="${b.status==='leído'?0.95:0.55}" stroke="${b.status==='leído'?color:'rgba(0,0,0,0)'}" stroke-width="1.5" style="cursor:pointer;"/>`;
+}
+function renderTreemap(){
+  const W=780, H=400;
+  const byCountry = {};
+  state.books.forEach(b=>{
+    const c = b.country || '(sin país)';
+    if(!byCountry[c]) byCountry[c] = {country:c, continent:b.continent, total:0, leidos:0};
+    byCountry[c].total++;
+    if(b.status==='leído') byCountry[c].leidos++;
   });
-  const svg = `
-  <svg viewBox="0 0 790 268" xmlns="http://www.w3.org/2000/svg">
-    ${grid}
-    <text x="${(PLOT.x0+PLOT.x1)/2}" y="262" font-size="9.5" letter-spacing="1" fill="rgba(224,172,82,.75)" text-anchor="middle" font-family="IBM Plex Mono">PRIORIDAD — universal → nicho</text>
-    <text x="14" y="${(PLOT.y0+PLOT.y1)/2}" font-size="9.5" letter-spacing="1" fill="rgba(224,172,82,.75)" text-anchor="middle" font-family="IBM Plex Mono" transform="rotate(-90 14 ${(PLOT.y0+PLOT.y1)/2})">DIFICULTAD — fácil → difícil</text>
-    <text x="${PLOT.x0+6}" y="${PLOT.y1-8}" font-size="9" fill="rgba(244,239,225,.4)" font-style="italic" font-family="Inter">↙ empieza aquí</text>
-    <text x="${PLOT.x1-6}" y="${PLOT.y0+13}" font-size="9" fill="rgba(244,239,225,.4)" font-style="italic" text-anchor="end" font-family="Inter">para más adelante ↗</text>
-    ${dots}
-  </svg>`;
-  const panel = document.getElementById('chart-svg-wrap');
-  panel.innerHTML = svg;
-  const legend = CONTINENTS.map(c=>`<span><span class="legend-dot" style="background:${CONTINENT_COLOR[c]}"></span>${c}</span>`).join('');
-  document.getElementById('chart-legend').innerHTML = legend + `<span style="opacity:.6">· tamaño = nº de páginas · relleno sólido = leído</span>`;
+  const data = Object.values(byCountry).sort((a,b)=>b.total-a.total);
+  const totalBooks = data.reduce((s,d)=>s+d.total,0);
+  const scale = (W*H)/totalBooks;
+  const items = data.map(d=>({...d, value: d.total*scale}));
+  const placed = treemapLayout(items, 0, 0, W, H);
+  let cells = '';
+  placed.forEach(c=>{
+    const pct = c.total ? c.leidos/c.total : 0;
+    const color = lerpColor('#C1592A','#2F6F6F', pct);
+    const showLabel = c.w>46 && c.h>26;
+    const fontSize = Math.min(13, Math.max(8, c.w/9));
+    cells += `<g class="treemap-cell" data-country="${esc(c.country)}" data-continent="${esc(c.continent)}">
+      <rect x="${c.x.toFixed(1)}" y="${c.y.toFixed(1)}" width="${c.w.toFixed(1)}" height="${c.h.toFixed(1)}" fill="${color}" rx="3">
+        <title>${esc(c.country)} — ${c.leidos}/${c.total} leídos (${Math.round(pct*100)}%)</title>
+      </rect>
+      ${showLabel ? `<text class="treemap-label" x="${(c.x+5).toFixed(1)}" y="${(c.y+fontSize+4).toFixed(1)}" font-size="${fontSize.toFixed(1)}" font-weight="600">${esc(c.country)}</text>
+      <text class="treemap-label" x="${(c.x+5).toFixed(1)}" y="${(c.y+fontSize*2+5).toFixed(1)}" font-size="${(fontSize*0.8).toFixed(1)}" opacity="0.85">${c.total} · ${Math.round(pct*100)}%</text>` : ''}
+    </g>`;
+  });
+  document.getElementById('treemap-svg-wrap').innerHTML = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${cells}</svg>`;
+  document.getElementById('treemap-legend').innerHTML = `
+    <span>0% leído</span><span class="treemap-legend-bar"></span><span>100% leído</span>
+    <span style="margin-left:14px;opacity:.7">tamaño = nº de libros · toca un país para filtrar</span>`;
 }
 
 /* ===================== render: mini gráficos ===================== */
@@ -1384,9 +1367,6 @@ function renderControlsState(){
   document.getElementById('filter-difficulty').value = state.filters.difficulty;
   document.getElementById('filter-length').value = state.filters.length;
   document.getElementById('sort-select').value = state.sort;
-  document.querySelectorAll('.view-toggle button').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.view===state.view);
-  });
   document.getElementById('filters-panel').classList.toggle('open', state.filtersPanelOpen);
   const f = state.filters;
   const activeCount = ['category','era','status','priority','difficulty','length'].filter(k=>f[k]!=='todas').length;
@@ -1434,53 +1414,6 @@ function readBadges(b){
     <span class="status-pill s-${esc(b.status)}" style="background:${sColor}1A;color:${sColor}">${esc(b.status)}</span>`;
 }
 
-function renderTableRowRead(b){
-  return `<tr>
-    <td class="title-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div></td>
-    <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)}</div></td>
-    <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="country">${esc(b.country)}</div></td>
-    <td>${esc(b.category)}</td>
-    <td>${esc(b.continent)}</td>
-    <td>${esc(b.era)}</td>
-    <td>${b.priority}</td>
-    <td>${b.difficulty}</td>
-    <td>${Number(b.pages)||0}</td>
-    <td><span class="status-pill s-${esc(b.status)}" style="background:${(STATUS_COLOR[b.status]||'#999')}1A;color:${STATUS_COLOR[b.status]||'#999'}">${esc(b.status)}</span></td>
-    <td>${starsHtml(b)}</td>
-    <td class="note-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="note">${esc(b.note)}</div></td>
-    <td><button class="btn-edit-toggle" data-id="${b.id}" title="Editar">✎</button></td>
-  </tr>`;
-}
-function renderTableRowEdit(b){
-  return `<tr class="editing-row">
-    <td class="title-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div></td>
-    <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)}</div></td>
-    <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="country">${esc(b.country)}</div></td>
-    <td>${categoryOption(b)}</td>
-    <td>${continentOption(b)}</td>
-    <td>${eraOption(b)}</td>
-    <td>${priorityOption(b)}</td>
-    <td>${difficultyOption(b)}</td>
-    <td>${pagesInput(b)}</td>
-    <td>${statusOption(b)}</td>
-    <td>${starsHtml(b)}</td>
-    <td class="note-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="note">${esc(b.note)}</div></td>
-    <td><button class="btn-edit-toggle active" data-id="${b.id}" title="Listo">✓</button> <button class="btn-delete" data-id="${b.id}" title="Eliminar">×</button></td>
-  </tr>`;
-}
-
-function renderTable(list){
-  if(list.length===0) return `<div class="empty-state">No hay libros que coincidan con estos filtros.</div>`;
-  const rows = list.map(b=> editingIds.has(b.id) ? renderTableRowEdit(b) : renderTableRowRead(b)).join('');
-  return `<div class="table-scroll"><table>
-    <thead><tr>
-      <th>Título</th><th>Autor</th><th>País</th><th>Categoría</th><th>Continente</th><th>Época</th>
-      <th>Prioridad</th><th>Dificultad</th><th>Páginas</th><th>Estado</th><th>Valoración</th><th>Nota</th><th></th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>`;
-}
-
 function renderCardRead(b){
   return `<div class="book-card">
       <div class="card-top-row">
@@ -1520,7 +1453,7 @@ function renderCards(list){
 function renderList(){
   const list = getFiltered();
   document.getElementById('result-count').textContent = `${list.length} de ${state.books.length} libros`;
-  const html = state.view==='table' ? renderTable(list) : renderCards(list);
+  const html = renderCards(list);
   document.getElementById('list-container').innerHTML = html;
 }
 
@@ -1530,7 +1463,7 @@ function updateBook(id, field, value){
   if(!b) return;
   b[field]=value;
   saveBooks();
-  renderStats(); renderChart(); renderMiniCharts();
+  renderStats(); renderTreemap(); renderMiniCharts();
 }
 function addBook(){
   const id = 'b'+Date.now();
@@ -1559,51 +1492,20 @@ function resetLibrary(){
   renderAll();
 }
 
-/* ===================== tooltip carta estelar ===================== */
-let tooltipEl;
-function setupTooltip(){
-  const panel = document.getElementById('chart-panel');
-  tooltipEl = document.getElementById('chart-tooltip');
-  panel.addEventListener('mouseover', e=>{
-    if(e.target.tagName!=='circle') return;
-    const id = e.target.getAttribute('data-id');
-    const b = state.books.find(x=>x.id===id);
-    if(!b) return;
-    const rect = panel.getBoundingClientRect();
-    tooltipEl.style.left = (e.clientX-rect.left)+'px';
-    tooltipEl.style.top = (e.clientY-rect.top-6)+'px';
-    tooltipEl.innerHTML = `<b>${esc(b.title)}</b><br>${esc(b.author)} — ${esc(b.country)}<br>Prioridad ${b.priority} · Dificultad ${b.difficulty} · ${b.pages}p · ${esc(b.status)}`;
-    tooltipEl.style.display='block';
-  });
-  panel.addEventListener('mousemove', e=>{
-    if(tooltipEl.style.display!=='block') return;
-    const rect = panel.getBoundingClientRect();
-    tooltipEl.style.left = (e.clientX-rect.left)+'px';
-    tooltipEl.style.top = (e.clientY-rect.top-6)+'px';
-  });
-  panel.addEventListener('mouseout', e=>{
-    if(e.target.tagName==='circle') tooltipEl.style.display='none';
-  });
-}
-
 /* ===================== eventos delegados ===================== */
 function setupEvents(){
   const app = document.getElementById('app');
 
   app.addEventListener('click', e=>{
-    if(e.target.tagName==='circle' && e.target.closest('#chart-svg-wrap')){
-      const id = e.target.getAttribute('data-id');
-      const b = state.books.find(x=>x.id===id);
-      if(b){
-        state.filters.priority = String(b.priority);
-        state.filters.difficulty = String(b.difficulty);
-        state.filtersPanelOpen = true;
-        state.page = 'explorar';
-        renderPageVisibility();
-        renderControlsState();
-        renderList();
-        document.getElementById('list-container').scrollIntoView({behavior:'smooth', block:'start'});
-      }
+    const treemapCell = e.target.closest('.treemap-cell');
+    if(treemapCell){
+      state.filters.continent = treemapCell.dataset.continent;
+      state.filters.country = treemapCell.dataset.country;
+      state.page = 'explorar';
+      renderPageVisibility();
+      renderControlsState();
+      renderList();
+      document.getElementById('list-container').scrollIntoView({behavior:'smooth', block:'start'});
       return;
     }
     const del = e.target.closest('.btn-delete');
@@ -1621,8 +1523,6 @@ function setupEvents(){
     if(signoutBtn){ flushSave().finally(()=>signOut(auth)); return; }
     const resetBtn = e.target.closest('.btn-reset');
     if(resetBtn){ resetLibrary(); return; }
-    const viewBtn = e.target.closest('.view-toggle button');
-    if(viewBtn){ state.view = viewBtn.dataset.view; renderControlsState(); renderList(); return; }
     const filtersToggle = e.target.closest('#btn-filters-toggle');
     if(filtersToggle){ state.filtersPanelOpen = !state.filtersPanelOpen; renderControlsState(); return; }
     const clearFilters = e.target.closest('#btn-clear-filters');
@@ -1736,13 +1636,11 @@ function buildShell(){
     <div id="page-estadisticas">
       <div id="stats-row" class="stats-row"></div>
 
-      <div class="panel-label">Carta estelar · prioridad vs. dificultad</div>
-      <div class="chart-panel" id="chart-panel">
-        <div id="chart-svg-wrap"></div>
-        <div class="chart-legend" id="chart-legend"></div>
-        <div class="chart-tooltip" id="chart-tooltip"></div>
+      <div class="panel-label">Atlas de países · tamaño = nº de libros · color = % leído</div>
+      <div class="treemap-panel" id="treemap-panel">
+        <div id="treemap-svg-wrap"></div>
       </div>
-      <div class="chart-hint">Toca un punto del gráfico para filtrar el listado de Explorar por esa prioridad y dificultad.</div>
+      <div class="treemap-legend" id="treemap-legend"></div>
 
       <div class="mini-charts">
         <div class="mini-card" id="mini-status"></div>
@@ -1763,10 +1661,6 @@ function buildShell(){
         <input type="text" id="search-input" placeholder="Buscar título, autor o país…">
         <button class="btn-filters-toggle" id="btn-filters-toggle">Filtros <span class="filters-badge" id="filters-badge"></span></button>
         <div class="grow-gap"></div>
-        <div class="view-toggle">
-          <button data-view="table" class="active">Tabla</button>
-          <button data-view="cards">Tarjetas</button>
-        </div>
         <button class="btn-add">+ Añadir libro</button>
       </div>
 
@@ -1817,7 +1711,7 @@ function buildShell(){
 function renderAll(){
   document.getElementById('header-subtitle').textContent = `${state.books.length} libros · ${new Set(state.books.map(b=>b.continent)).size} continentes · editable`;
   renderStats();
-  renderChart();
+  renderTreemap();
   renderMiniCharts();
   renderControlsState();
   renderList();
@@ -1829,7 +1723,6 @@ async function initApp(uid){
   await loadBooks();
   buildShell();
   setupEvents();
-  setupTooltip();
   renderAll();
 }
 

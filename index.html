@@ -199,6 +199,31 @@ td.note-cell .field-text:focus{max-width:320px;white-space:normal;overflow:visib
 .country-chip.active{background:var(--terracotta);color:#fff;border-color:var(--terracotta);}
 .country-chip.active .chip-count{color:#fff;}
 .country-chip:hover{border-color:var(--terracotta);}
+
+.shelf-wrap{background:linear-gradient(180deg,#E8DFC8 0%,#E8DFC8 92%,#C9A86B 92%,#C9A86B 100%);border-radius:8px;padding:18px 14px 0 14px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.08);}
+.shelf-row{display:flex;align-items:flex-end;gap:4px;flex-wrap:wrap;padding-bottom:18px;}
+.book-spine{
+  border:none;border-radius:3px 3px 0 0;cursor:pointer;position:relative;
+  display:flex;align-items:flex-end;justify-content:center;padding:8px 0;
+  box-shadow:inset -3px 0 6px rgba(0,0,0,.18),inset 2px 0 4px rgba(255,255,255,.12);
+  flex-shrink:0;
+}
+.book-spine:hover{filter:brightness(1.12);transform:translateY(-3px);transition:transform .12s, filter .12s;}
+.spine-title{
+  writing-mode:vertical-rl;text-orientation:mixed;color:#fff;font-size:.68rem;
+  font-weight:600;max-height:88%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  text-shadow:0 1px 2px rgba(0,0,0,.25);letter-spacing:.2px;
+}
+.spine-badge{position:absolute;top:5px;left:50%;transform:translateX(-50%);font-size:.7rem;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+.spine-badge-read{color:var(--gold);}
+.spine-badge-reading{color:#fff;}
+
+.shelf-detail-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:500;}
+.shelf-detail-overlay.open{display:flex;}
+.shelf-detail-backdrop{position:absolute;inset:0;background:rgba(40,34,24,.55);}
+.shelf-detail-panel{position:relative;background:var(--parchment);max-width:480px;width:90%;max-height:85vh;overflow:auto;border-radius:10px;padding:22px;box-shadow:0 12px 40px rgba(0,0,0,.35);}
+.shelf-detail-close{position:absolute;top:10px;right:12px;border:none;background:none;font-size:1.3rem;color:#7a7363;cursor:pointer;line-height:1;}
+.shelf-detail-close:hover{color:var(--terracotta);}
 .btn-delete{
   border:none;background:none;color:#B9573A;font-size:1rem;cursor:pointer;padding:0 4px;line-height:1;
 }
@@ -386,7 +411,6 @@ const seedBooks = [
 {id:'b10',title:'Guerra y paz',author:'Liev Tolstói',country:'Rusia',continent:'Europa',era:'Clásica',category:'Novela',priority:2,difficulty:4,pages:1350,status:'pendiente',note:'Historia, estrategia y vida íntima entrelazadas a gran escala.'},
 {id:'b11',title:'El maestro y Margarita',author:'Mijaíl Bulgákov',country:'Rusia',continent:'Europa',era:'Moderna',category:'Novela',priority:2,difficulty:3,pages:450,status:'pendiente',note:'Sátira del poder soviético, con el diablo como invitado de honor.'},
 {id:'b12',title:'Vida y destino',author:'Vasili Grossman',country:'Rusia',continent:'Europa',era:'Contemporánea',category:'Novela',priority:3,difficulty:4,pages:900,status:'pendiente',note:'Stalingrado como sistema, no como batalla.'},
-{id:'b13',title:'Don Quijote de la Mancha',author:'Miguel de Cervantes',country:'España',continent:'Europa',era:'Clásica',category:'Novela',priority:1,difficulty:3,pages:1000,status:'pendiente',note:'El libro fundacional de la novela moderna.'},
 {id:'b14',title:'La Regenta',author:'Leopoldo Alas Clarín',country:'España',continent:'Europa',era:'Clásica',category:'Novela',priority:3,difficulty:3,pages:700,status:'pendiente',note:'Provincia, hipocresía y deseo en la España del XIX.'},
 {id:'b15',title:'Niebla',author:'Miguel de Unamuno',country:'España',continent:'Europa',era:'Moderna',category:'Novela',priority:3,difficulty:3,pages:250,status:'pendiente',note:'Metaficción existencialista, corta y filosa.'},
 {id:'b16',title:'Tiempo de silencio',author:'Luis Martín-Santos',country:'España',continent:'Europa',era:'Contemporánea',category:'Novela',priority:4,difficulty:4,pages:250,status:'pendiente',note:'La España gris del franquismo en prosa experimental.'},
@@ -1339,10 +1363,58 @@ function renderCards(list){
   return `<div class="cards-grid">${cards}</div>`;
 }
 
+function spineHeight(b){
+  return 168 + (hashStr(b.id) % 55);
+}
+function spineWidth(b){
+  return Math.max(22, Math.min(58, 22 + (Number(b.pages)||200)/22));
+}
+function renderShelf(list){
+  if(list.length===0) return `<div class="empty-state">No hay libros que coincidan con estos filtros.</div>`;
+  const spines = list.map(b=>{
+    const color = CONTINENT_COLOR[b.continent] || '#8C8576';
+    const h = spineHeight(b);
+    const w = spineWidth(b);
+    const badge = b.status==='leído' ? '<span class="spine-badge spine-badge-read">★</span>'
+      : b.status==='leyendo' ? '<span class="spine-badge spine-badge-reading">●</span>' : '';
+    return `<button class="book-spine" data-id="${b.id}" style="height:${h}px;width:${w}px;background:${color};" title="${esc(b.title)} — ${esc(b.author)}">
+        ${badge}
+        <span class="spine-title">${esc(b.title)}</span>
+      </button>`;
+  }).join('');
+  return `<div class="shelf-wrap"><div class="shelf-row">${spines}</div></div>`;
+}
+
+let openDetailId = null;
+function openShelfDetail(id){
+  const b = state.books.find(x=>x.id===id);
+  if(!b) return;
+  openDetailId = id;
+  const detail = document.getElementById('shelf-detail-content');
+  detail.innerHTML = `
+    <div class="card-title" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div>
+    <div class="card-author" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)} — <span contenteditable="true" data-id="${b.id}" data-field="country" style="display:inline">${esc(b.country)}</span></div>
+    <div class="card-meta-row">${categoryOption(b)}${continentOption(b)}${eraOption(b)}</div>
+    <div class="card-meta-row">${priorityOption(b)}${difficultyOption(b)}${pagesInput(b)}${statusOption(b)}</div>
+    <div class="card-meta-row">${starsHtml(b)}</div>
+    <div class="card-note" contenteditable="true" data-id="${b.id}" data-field="note">${esc(b.note)}</div>
+    <div class="card-footer"><button class="btn-delete" data-id="${b.id}" title="Eliminar">× eliminar</button></div>
+  `;
+  document.getElementById('shelf-detail-overlay').classList.add('open');
+}
+function closeShelfDetail(){
+  openDetailId = null;
+  document.getElementById('shelf-detail-overlay').classList.remove('open');
+}
+function refreshShelfDetailIfOpen(id){
+  if(openDetailId===id) openShelfDetail(id);
+}
+
 function renderList(){
   const list = getFiltered();
   document.getElementById('result-count').textContent = `${list.length} de ${state.books.length} libros`;
-  document.getElementById('list-container').innerHTML = state.view==='table' ? renderTable(list) : renderCards(list);
+  const html = state.view==='table' ? renderTable(list) : state.view==='shelf' ? renderShelf(list) : renderCards(list);
+  document.getElementById('list-container').innerHTML = html;
 }
 
 /* ===================== mutaciones ===================== */
@@ -1370,6 +1442,7 @@ function deleteBook(id){
   if(!confirm(`¿Eliminar «${b.title}» de tu atlas?`)) return;
   state.books = state.books.filter(x=>x.id!==id);
   saveBooks();
+  if(openDetailId===id) closeShelfDetail();
   renderAll();
 }
 function resetLibrary(){
@@ -1436,6 +1509,9 @@ function setupEvents(){
       renderList();
       return;
     }
+    const spine = e.target.closest('.book-spine');
+    if(spine){ openShelfDetail(spine.dataset.id); return; }
+    if(e.target.id==='shelf-detail-close' || e.target.id==='shelf-detail-backdrop'){ closeShelfDetail(); return; }
     const star = e.target.closest('.star');
     if(star){
       const id = star.dataset.id;
@@ -1444,6 +1520,7 @@ function setupEvents(){
       const newVal = (b && Number(b.rating)===value) ? 0 : value;
       updateBook(id, 'rating', newVal);
       renderList();
+      refreshShelfDetailIfOpen(id);
       return;
     }
   });
@@ -1544,6 +1621,7 @@ function buildShell(){
       <div class="view-toggle">
         <button data-view="table" class="active">Tabla</button>
         <button data-view="cards">Tarjetas</button>
+        <button data-view="shelf">Estantería</button>
       </div>
       <button class="btn-add">+ Añadir libro</button>
       <div class="controls-footer">
@@ -1553,6 +1631,14 @@ function buildShell(){
     </div>
 
     <div id="list-container"></div>
+
+    <div class="shelf-detail-overlay" id="shelf-detail-overlay">
+      <div class="shelf-detail-backdrop" id="shelf-detail-backdrop"></div>
+      <div class="shelf-detail-panel">
+        <button class="shelf-detail-close" id="shelf-detail-close" title="Cerrar">×</button>
+        <div id="shelf-detail-content"></div>
+      </div>
+    </div>
 
     <div class="footer-note">Tus cambios se guardan automáticamente y siguen aquí la próxima vez que abras este atlas.</div>
   `;

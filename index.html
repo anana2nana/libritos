@@ -317,7 +317,6 @@ const FB_VER = '12.14.0';
 const appMod = await atlasLoadModule('https://www.gstatic.com/firebasejs/'+FB_VER+'/firebase-app.js', 15000);
 const authMod = await atlasLoadModule('https://www.gstatic.com/firebasejs/'+FB_VER+'/firebase-auth.js', 15000);
 const fsMod = await atlasLoadModule('https://www.gstatic.com/firebasejs/'+FB_VER+'/firebase-firestore.js', 20000);
-atlasShowFatal('[chk 1] módulos Firebase cargados.');
 
 const { initializeApp } = appMod;
 const { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } = authMod;
@@ -337,21 +336,16 @@ const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
 const googleProvider = new GoogleAuthProvider();
 const db = initializeFirestore(fbApp, { localCache: persistentLocalCache() });
-atlasShowFatal('[chk 2] firebase inicializado (app/auth/firestore).');
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('/sw.js').then(function(){
-      atlasShowFatal('[chk 3b] Service Worker registrado OK.');
-    }).catch(function(err){
-      atlasShowFatal('[chk 3b] Service Worker FALLÓ al registrar: ' + err);
+    navigator.serviceWorker.register('/sw.js').catch(function(err){
+      console.warn('No se pudo registrar el Service Worker:', err);
     });
   });
 }
-atlasShowFatal('[chk 3] bloque de Service Worker programado (no bloqueante).');
 
 (function(){
-atlasShowFatal('[chk 4] arrancando bloque principal de la app.');
 
 /* ===================== datos ===================== */
 
@@ -1268,9 +1262,7 @@ document.getElementById('google-login-btn').addEventListener('click', ()=>{
   });
 });
 
-atlasShowFatal('[chk 5] justo antes de registrar onAuthStateChanged.');
 onAuthStateChanged(auth, user=>{
-  atlasShowFatal('[chk 6] onAuthStateChanged disparado. Usuario: '+(user?('UID '+user.uid):'ninguno'));
   if(user){ showApp(); initApp(user.uid); }
   else{ showGate(); }
 });

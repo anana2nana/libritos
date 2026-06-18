@@ -261,15 +261,33 @@ td.note-cell .field-text:focus{max-width:320px;white-space:normal;overflow:visib
 .book-card{
   background:var(--parchment);border:1px solid var(--parchment-line);border-radius:12px;padding:14px 15px;
 }
+.book-card.editing{border-color:var(--terracotta);}
+.card-top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.card-titleblock{flex:1;min-width:0;}
 .book-card .card-title{font-family:'Fraunces',serif;font-weight:600;font-size:1.02rem;color:var(--ink-text);outline:none;border-radius:4px;}
 .book-card .card-title:focus{background:#fff;box-shadow:0 0 0 2px rgba(193,89,42,.3);}
 .book-card .card-author{font-size:.78rem;color:var(--muted);margin:2px 0 10px;outline:none;border-radius:4px;}
 .book-card .card-author:focus{background:#fff;}
-.card-meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;}
+.card-meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;align-items:center;}
 .card-meta-row select,.card-meta-row input{font-size:.72rem;padding:3px 5px;border:1px solid var(--parchment-line);border-radius:5px;background:#fff;color:var(--ink-text);}
 .card-note{font-size:.78rem;color:var(--ink-text);margin-top:8px;outline:none;border-radius:4px;min-height:18px;}
 .card-note:focus{background:#fff;box-shadow:0 0 0 2px rgba(193,89,42,.3);}
 .card-footer{display:flex;justify-content:flex-end;margin-top:8px;}
+
+.btn-edit-toggle{
+  border:1px solid var(--parchment-line);background:#fff;color:var(--muted);
+  width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:.78rem;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.btn-edit-toggle:hover{border-color:var(--terracotta);color:var(--terracotta);}
+.btn-edit-toggle.active{background:var(--terracotta);color:#fff;border-color:var(--terracotta);}
+.meta-badge{
+  font-size:.7rem;padding:2px 8px;border-radius:10px;background:#EFEAE0;color:#7A7363;
+  border:1px solid transparent;white-space:nowrap;
+}
+.pd-badge{font-family:'IBM Plex Mono',monospace;background:#fff;border-color:var(--parchment-line);}
+.status-pill{font-size:.7rem;padding:2px 9px;border-radius:10px;font-weight:600;white-space:nowrap;}
+.editing-row{background:rgba(193,89,42,.06);}
 
 .empty-state{text-align:center;padding:40px 10px;color:var(--muted);font-size:.86rem;}
 
@@ -1093,6 +1111,7 @@ let state = {
 /* ===================== almacenamiento (Firestore) ===================== */
 let docRef = null;
 let saveTimer = null;
+let editingIds = new Set();
 
 function setSyncStatus(stateName){
   const el = document.getElementById('sync-status');
@@ -1404,24 +1423,55 @@ function starsHtml(b){
   return out;
 }
 
+function readBadges(b){
+  const cColor = CONTINENT_COLOR[b.continent] || '#999';
+  const sColor = STATUS_COLOR[b.status] || '#999';
+  return `<span class="meta-badge" style="background:${cColor}1A;color:${cColor};border-color:${cColor}55">${esc(b.continent)}</span>
+    <span class="meta-badge">${esc(b.category)}</span>
+    <span class="meta-badge">${esc(b.era)}</span>
+    <span class="meta-badge pd-badge" title="Prioridad ${b.priority} · Dificultad ${b.difficulty}">P${b.priority}·D${b.difficulty}</span>
+    <span class="meta-badge">${Number(b.pages)||0}p</span>
+    <span class="status-pill s-${esc(b.status)}" style="background:${sColor}1A;color:${sColor}">${esc(b.status)}</span>`;
+}
+
+function renderTableRowRead(b){
+  return `<tr>
+    <td class="title-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div></td>
+    <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)}</div></td>
+    <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="country">${esc(b.country)}</div></td>
+    <td>${esc(b.category)}</td>
+    <td>${esc(b.continent)}</td>
+    <td>${esc(b.era)}</td>
+    <td>${b.priority}</td>
+    <td>${b.difficulty}</td>
+    <td>${Number(b.pages)||0}</td>
+    <td><span class="status-pill s-${esc(b.status)}" style="background:${(STATUS_COLOR[b.status]||'#999')}1A;color:${STATUS_COLOR[b.status]||'#999'}">${esc(b.status)}</span></td>
+    <td>${starsHtml(b)}</td>
+    <td class="note-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="note">${esc(b.note)}</div></td>
+    <td><button class="btn-edit-toggle" data-id="${b.id}" title="Editar">✎</button></td>
+  </tr>`;
+}
+function renderTableRowEdit(b){
+  return `<tr class="editing-row">
+    <td class="title-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div></td>
+    <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)}</div></td>
+    <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="country">${esc(b.country)}</div></td>
+    <td>${categoryOption(b)}</td>
+    <td>${continentOption(b)}</td>
+    <td>${eraOption(b)}</td>
+    <td>${priorityOption(b)}</td>
+    <td>${difficultyOption(b)}</td>
+    <td>${pagesInput(b)}</td>
+    <td>${statusOption(b)}</td>
+    <td>${starsHtml(b)}</td>
+    <td class="note-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="note">${esc(b.note)}</div></td>
+    <td><button class="btn-edit-toggle active" data-id="${b.id}" title="Listo">✓</button> <button class="btn-delete" data-id="${b.id}" title="Eliminar">×</button></td>
+  </tr>`;
+}
+
 function renderTable(list){
   if(list.length===0) return `<div class="empty-state">No hay libros que coincidan con estos filtros.</div>`;
-  const rows = list.map(b=>`
-    <tr>
-      <td class="title-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div></td>
-      <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)}</div></td>
-      <td><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="country">${esc(b.country)}</div></td>
-      <td>${categoryOption(b)}</td>
-      <td>${continentOption(b)}</td>
-      <td>${eraOption(b)}</td>
-      <td>${priorityOption(b)}</td>
-      <td>${difficultyOption(b)}</td>
-      <td>${pagesInput(b)}</td>
-      <td>${statusOption(b)}</td>
-      <td>${starsHtml(b)}</td>
-      <td class="note-cell"><div class="field-text" contenteditable="true" data-id="${b.id}" data-field="note">${esc(b.note)}</div></td>
-      <td><button class="btn-delete" data-id="${b.id}" title="Eliminar">×</button></td>
-    </tr>`).join('');
+  const rows = list.map(b=> editingIds.has(b.id) ? renderTableRowEdit(b) : renderTableRowRead(b)).join('');
   return `<div class="table-scroll"><table>
     <thead><tr>
       <th>Título</th><th>Autor</th><th>País</th><th>Categoría</th><th>Continente</th><th>Época</th>
@@ -1431,18 +1481,39 @@ function renderTable(list){
   </table></div>`;
 }
 
-function renderCards(list){
-  if(list.length===0) return `<div class="empty-state">No hay libros que coincidan con estos filtros.</div>`;
-  const cards = list.map(b=>`
-    <div class="book-card">
-      <div class="card-title" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div>
-      <div class="card-author" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)} — <span contenteditable="true" data-id="${b.id}" data-field="country" style="display:inline">${esc(b.country)}</span></div>
+function renderCardRead(b){
+  return `<div class="book-card">
+      <div class="card-top-row">
+        <div class="card-titleblock">
+          <div class="card-title" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div>
+          <div class="card-author" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)} — <span contenteditable="true" data-id="${b.id}" data-field="country" style="display:inline">${esc(b.country)}</span></div>
+        </div>
+        <button class="btn-edit-toggle" data-id="${b.id}" title="Editar">✎</button>
+      </div>
+      <div class="card-meta-row">${readBadges(b)}</div>
+      <div class="card-meta-row">${starsHtml(b)}</div>
+      <div class="card-note" contenteditable="true" data-id="${b.id}" data-field="note">${esc(b.note)}</div>
+    </div>`;
+}
+function renderCardEdit(b){
+  return `<div class="book-card editing">
+      <div class="card-top-row">
+        <div class="card-titleblock">
+          <div class="card-title" contenteditable="true" data-id="${b.id}" data-field="title">${esc(b.title)}</div>
+          <div class="card-author" contenteditable="true" data-id="${b.id}" data-field="author">${esc(b.author)} — <span contenteditable="true" data-id="${b.id}" data-field="country" style="display:inline">${esc(b.country)}</span></div>
+        </div>
+        <button class="btn-edit-toggle active" data-id="${b.id}" title="Listo">✓</button>
+      </div>
       <div class="card-meta-row">${categoryOption(b)}${continentOption(b)}${eraOption(b)}</div>
       <div class="card-meta-row">${priorityOption(b)}${difficultyOption(b)}${pagesInput(b)}${statusOption(b)}</div>
       <div class="card-meta-row">${starsHtml(b)}</div>
       <div class="card-note" contenteditable="true" data-id="${b.id}" data-field="note">${esc(b.note)}</div>
       <div class="card-footer"><button class="btn-delete" data-id="${b.id}" title="Eliminar">× eliminar</button></div>
-    </div>`).join('');
+    </div>`;
+}
+function renderCards(list){
+  if(list.length===0) return `<div class="empty-state">No hay libros que coincidan con estos filtros.</div>`;
+  const cards = list.map(b=> editingIds.has(b.id) ? renderCardEdit(b) : renderCardRead(b)).join('');
   return `<div class="cards-grid">${cards}</div>`;
 }
 
@@ -1477,6 +1548,7 @@ function deleteBook(id){
   if(!b) return;
   if(!confirm(`¿Eliminar «${b.title}» de tu atlas?`)) return;
   state.books = state.books.filter(x=>x.id!==id);
+  editingIds.delete(id);
   saveBooks();
   renderAll();
 }
@@ -1536,6 +1608,13 @@ function setupEvents(){
     }
     const del = e.target.closest('.btn-delete');
     if(del){ deleteBook(del.dataset.id); return; }
+    const editToggle = e.target.closest('.btn-edit-toggle');
+    if(editToggle){
+      const id = editToggle.dataset.id;
+      if(editingIds.has(id)) editingIds.delete(id); else editingIds.add(id);
+      renderList();
+      return;
+    }
     const addBtn = e.target.closest('.btn-add');
     if(addBtn){ addBook(); return; }
     const signoutBtn = e.target.closest('#btn-signout');
